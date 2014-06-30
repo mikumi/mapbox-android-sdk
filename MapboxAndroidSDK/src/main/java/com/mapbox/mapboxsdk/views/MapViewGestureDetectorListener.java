@@ -12,6 +12,7 @@ import com.mapbox.mapboxsdk.util.constants.UtilConstants;
 public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
 
     private final MapView mapView;
+    private static String TAG = "Mapbox gestureDetector";
 
     /**
      * Bind a new gesture detector to a map
