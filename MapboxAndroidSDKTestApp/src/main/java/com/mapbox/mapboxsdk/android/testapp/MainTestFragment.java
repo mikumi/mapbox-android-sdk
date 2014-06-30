@@ -41,12 +41,11 @@ public class MainTestFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
+        MapView.setDebugMode(true);
         View view = inflater.inflate(R.layout.fragment_maintest, container, false);
-
         mv = (MapView) view.findViewById(R.id.mapview);
         // Set Default Map Type
-        replaceMapView(terrain);
-        currentLayer = "terrain";
+        replaceMapView("mapquest");
         mv.setUserLocationEnabled(true)
             .setUserLocationTrackingMode(UserLocationOverlay.TrackingMode.FOLLOW);
         /*
@@ -80,9 +79,8 @@ public class MainTestFragment extends Fragment {
         satBut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!currentLayer.equals("satellite")) {
+                if (!currentLayer.equals(satellite)) {
                     replaceMapView(satellite);
-                    currentLayer = "satellite";
                 }
             }
         });
@@ -90,9 +88,8 @@ public class MainTestFragment extends Fragment {
         terBut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!currentLayer.equals("terrain")) {
+                if (!currentLayer.equals(terrain)) {
                     replaceMapView(terrain);
-                    currentLayer = "terrain";
                 }
             }
         });
@@ -100,9 +97,8 @@ public class MainTestFragment extends Fragment {
         strBut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!currentLayer.equals("street")) {
+                if (!currentLayer.equals(street)) {
                     replaceMapView(street);
-                    currentLayer = "street";
                 }
             }
         });
@@ -112,7 +108,6 @@ public class MainTestFragment extends Fragment {
             public void onClick(View v) {
                 if (!currentLayer.equals(mbTile)) {
                     replaceMapView(mbTile);
-                    currentLayer = mbTile;
                 }
             }
         });
@@ -242,6 +237,8 @@ public class MainTestFragment extends Fragment {
         mv.setCenter(mv.getTileProvider().getCenterCoordinate());
         mv.setZoom(0);
         Log.d("MainActivity", "zoomToBoundingBox " + box.toString());
+
+        currentLayer = layer;
         //        mv.zoomToBoundingBox(box);
     }
 
