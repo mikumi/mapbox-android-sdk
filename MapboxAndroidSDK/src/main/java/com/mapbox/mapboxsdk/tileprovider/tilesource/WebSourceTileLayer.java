@@ -159,7 +159,6 @@ public class WebSourceTileLayer extends TileLayer {
      */
     public Bitmap getBitmapFromURL(final String url, final MapTileCache aCache) {
         // We track the active threads here, every exit point should decrement this value.
-        Log.d(getClass().getCanonicalName(), "getBitmapFormURL() called with url = '" + url + "'");
         activeThreads.incrementAndGet();
         InputStream in = null;
         OutputStream out = null;
@@ -174,7 +173,6 @@ public class WebSourceTileLayer extends TileLayer {
             in = connection.getInputStream();
 
             if (in == null) {
-                Log.d(TAG, "No content downloading MapTile: '" + url + "'");
                 return null;
             }
 
