@@ -68,7 +68,6 @@ public class Marker {
         this.setTitle(aTitle);
         this.setDescription(aDescription);
         this.mLatLng = aLatLng;
-        Log.d(getClass().getCanonicalName(), "markerconst" + mv + aTitle + aDescription + aLatLng);
         if (mv != null) {
             mAnchor = mv.getDefaultPinAnchor();
         }
