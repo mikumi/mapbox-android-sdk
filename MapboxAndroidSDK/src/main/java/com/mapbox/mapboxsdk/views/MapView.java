@@ -1491,18 +1491,14 @@ public class MapView extends ViewGroup
             }
 
             // can't use the scale detector's onTouchEvent() result as it always returns true (Android issue #42591)
-            //Android seems to be able to recognize a scale with one pointer ...
-            // what a smart guy... let's prevent this
-            if (rotatedEvent.getPointerCount() != 1) {
-                mScaleGestureDetector.onTouchEvent(rotatedEvent);
+            boolean result, isScaling;
+            mScaleGestureDetector.onTouchEvent(rotatedEvent);
+            isScaling = result = mScaleGestureDetector.isInProgress();
+            if (!isScaling) {
+                // if no scaling is performed check for other gestures (fling, long tab, etc.)
+                result =  mGestureDetector.onTouchEvent(rotatedEvent);
             }
-            boolean result = mScaleGestureDetector.isInProgress();
-            if (!result) {
-                result = mGestureDetector.onTouchEvent(rotatedEvent);
-            } else {
-                //needs to cancel two fingers tap
-                canTapTwoFingers = false;
-            }
+            canTapTwoFingers = canTapTwoFingers & !result;
             //handleTwoFingersTap should always be called because it counts pointers up/down
             result |= handleTwoFingersTap(rotatedEvent);
 
