@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.Scroller;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.google.common.base.Strings;
@@ -73,7 +74,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * state of a single map, including layers, markers,
  * and interaction code.
  */
-public class MapView extends ViewGroup
+public class MapView extends FrameLayout
         implements MapViewConstants, MapEventsReceiver, MapboxConstants {
     /**
      * The default marker Overlay, automatically added to the view to add markers directly.
@@ -155,9 +156,6 @@ public class MapView extends ViewGroup
 
     private final Handler mTileRequestCompleteHandler;
 
-    /* a point that will be reused to design added views */
-    private final PointF mPoint = new PointF();
-
     private TilesLoadedListener tilesLoadedListener;
     TileLoadedListener tileLoadedListener;
     private InfoWindow currentTooltip;
@@ -180,7 +178,6 @@ public class MapView extends ViewGroup
                       MapTileLayerBase tileProvider, final Handler tileRequestCompleteHandler,
                       final AttributeSet attrs) {
         super(aContext, attrs);
-        setWillNotDraw(false);
         mLayedOut = false;
         mConstraintRegionFit = false;
         this.mController = new MapController(this);
@@ -363,6 +360,112 @@ public class MapView extends ViewGroup
             ((MapTileLayerBasic) mTileProvider).removeTileSource(index);
             updateAfterSourceChange();
         }
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean result;
+        canvas.save();
+        if (child.getLayoutParams() instanceof MapView.LayoutParams) {
+            final MapView.LayoutParams lp = (MapView.LayoutParams) child.getLayoutParams();
+            final float mapScale = 1 / mMultiTouchScale;
+            canvas.scale(mapScale, mapScale, lp.mapPoint.x, lp.mapPoint.y);
+            canvas.translate( - getWidth() / 2, - getHeight() / 2);
+        }
+        result = super.drawChild(canvas, child, drawingTime);
+        canvas.restore();
+        return result;
+    }
+
+    @Override
+    protected void onLayout(final boolean changed, final int l, final int t, final int r,
+                            final int b) {
+        final int count = getChildCount();
+
+        final Projection projection = getProjection();
+        for (int i = 0; i < count; i++) {
+            final View child = getChildAt(i);
+            if (child.getVisibility() != GONE && child.getLayoutParams() instanceof MapView.LayoutParams) {
+
+                final MapView.LayoutParams lp = (MapView.LayoutParams) child.getLayoutParams();
+                final int childHeight = child.getMeasuredHeight();
+                final int childWidth = child.getMeasuredWidth();
+                projection.toMapPixels(lp.geoPoint, lp.mapPoint);
+                final int x = (int) lp.mapPoint.x + getWidth() / 2;
+                final int y = (int) lp.mapPoint.y + getHeight() / 2;
+                int childLeft = x;
+                int childTop = y;
+                switch (lp.alignment) {
+                    case MapView.LayoutParams.TOP_LEFT:
+                        childLeft = getPaddingLeft() + x;
+                        childTop = getPaddingTop() + y;
+                        break;
+                    case MapView.LayoutParams.TOP_CENTER:
+                        childLeft = getPaddingLeft() + x - childWidth / 2;
+                        childTop = getPaddingTop() + y;
+                        break;
+                    case MapView.LayoutParams.TOP_RIGHT:
+                        childLeft = getPaddingLeft() + x - childWidth;
+                        childTop = getPaddingTop() + y;
+                        break;
+                    case MapView.LayoutParams.CENTER_LEFT:
+                        childLeft = getPaddingLeft() + x;
+                        childTop = getPaddingTop() + y - childHeight / 2;
+                        break;
+                    case MapView.LayoutParams.CENTER:
+                        childLeft = getPaddingLeft() + x - childWidth / 2;
+                        childTop = getPaddingTop() + y - childHeight / 2;
+                        break;
+                    case MapView.LayoutParams.CENTER_RIGHT:
+                        childLeft = getPaddingLeft() + x - childWidth;
+                        childTop = getPaddingTop() + y - childHeight / 2;
+                        break;
+                    case MapView.LayoutParams.BOTTOM_LEFT:
+                        childLeft = getPaddingLeft() + x;
+                        childTop = getPaddingTop() + y - childHeight;
+                        break;
+                    case MapView.LayoutParams.BOTTOM_CENTER:
+                        childLeft = getPaddingLeft() + x - childWidth / 2;
+                        childTop = getPaddingTop() + y - childHeight;
+                        break;
+                    case MapView.LayoutParams.BOTTOM_RIGHT:
+                        childLeft = getPaddingLeft() + x - childWidth;
+                        childTop = getPaddingTop() + y - childHeight;
+                        break;
+                }
+                childLeft += lp.offsetX;
+                childTop += lp.offsetY;
+                child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+            }
+        }
+    }
+
+    @Override
+    protected void dispatchDraw (Canvas c) {
+        mProjection = updateProjection();
+
+        // Save the current canvas matrix
+        c.save();
+
+        c.translate(getWidth() / 2, getHeight() / 2);
+        c.scale(mMultiTouchScale, mMultiTouchScale, mMultiTouchScalePoint.x,
+                mMultiTouchScalePoint.y);
+
+        // rotate Canvas
+        c.rotate(mapOrientation, mProjection.getScreenRect().exactCenterX(),
+                mProjection.getScreenRect().exactCenterY());
+
+        // Draw all Overlays.
+        this.getOverlayManager().draw(c, this);
+
+        //draw all children (mostly tooltips)
+        super.dispatchDraw(c);
+
+        c.restore();
+    }
+
+    public void addTooltipView(final View tooltipView, final MapView.LayoutParams params) {
+        addView(tooltipView, params);
     }
 
     /**
@@ -1224,14 +1327,14 @@ public class MapView extends ViewGroup
      * with {@link MapView.LayoutParams#BOTTOM_CENTER}.
      */
     @Override
-    protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
+    protected FrameLayout.LayoutParams generateDefaultLayoutParams() {
         return new MapView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, null, MapView.LayoutParams.BOTTOM_CENTER, 0,
                 0);
     }
 
     @Override
-    public ViewGroup.LayoutParams generateLayoutParams(final AttributeSet attrs) {
+    public FrameLayout.LayoutParams generateLayoutParams(final AttributeSet attrs) {
         return new MapView.LayoutParams(getContext(), attrs);
     }
 
@@ -1246,86 +1349,86 @@ public class MapView extends ViewGroup
         return new MapView.LayoutParams(p);
     }
 
-    @Override
-    protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
-        final int count = getChildCount();
-
-        int maxHeight = 0;
-        int maxWidth = 0;
-
-        // Find out how big everyone wants to be
-        measureChildren(widthMeasureSpec, heightMeasureSpec);
-        final Projection projection = getProjection();
-        // Find rightmost and bottom-most child
-        for (int i = 0; i < count; i++) {
-            final View child = getChildAt(i);
-            if (child.getVisibility() != GONE) {
-
-                final MapView.LayoutParams lp = (MapView.LayoutParams) child.getLayoutParams();
-                final int childHeight = child.getMeasuredHeight();
-                final int childWidth = child.getMeasuredWidth();
-                projection.toMapPixels(lp.geoPoint, mPoint);
-                final int x = (int) mPoint.x + getWidth() / 2;
-                final int y = (int) mPoint.y + getHeight() / 2;
-                int childRight = x;
-                int childBottom = y;
-                switch (lp.alignment) {
-                    case MapView.LayoutParams.TOP_LEFT:
-                        childRight = x + childWidth;
-                        childBottom = y;
-                        break;
-                    case MapView.LayoutParams.TOP_CENTER:
-                        childRight = x + childWidth / 2;
-                        childBottom = y;
-                        break;
-                    case MapView.LayoutParams.TOP_RIGHT:
-                        childRight = x;
-                        childBottom = y;
-                        break;
-                    case MapView.LayoutParams.CENTER_LEFT:
-                        childRight = x + childWidth;
-                        childBottom = y + childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.CENTER:
-                        childRight = x + childWidth / 2;
-                        childBottom = y + childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.CENTER_RIGHT:
-                        childRight = x;
-                        childBottom = y + childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_LEFT:
-                        childRight = x + childWidth;
-                        childBottom = y + childHeight;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_CENTER:
-                        childRight = x + childWidth / 2;
-                        childBottom = y + childHeight;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_RIGHT:
-                        childRight = x;
-                        childBottom = y + childHeight;
-                        break;
-                }
-                childRight += lp.offsetX;
-                childBottom += lp.offsetY;
-
-                maxWidth = Math.max(maxWidth, childRight);
-                maxHeight = Math.max(maxHeight, childBottom);
-            }
-        }
-
-        // Account for padding too
-        maxWidth += getPaddingLeft() + getPaddingRight();
-        maxHeight += getPaddingTop() + getPaddingBottom();
-
-        // Check against minimum height and width
-        maxHeight = Math.max(maxHeight, getSuggestedMinimumHeight());
-        maxWidth = Math.max(maxWidth, getSuggestedMinimumWidth());
-
-        setMeasuredDimension(resolveSize(maxWidth, widthMeasureSpec),
-                resolveSize(maxHeight, heightMeasureSpec));
-    }
+//    @Override
+//    protected void onMeasure(final int widthMeasureSpec, final int heightMeasureSpec) {
+//        final int count = getChildCount();
+//
+//        int maxHeight = 0;
+//        int maxWidth = 0;
+//
+//        // Find out how big everyone wants to be
+//        measureChildren(widthMeasureSpec, heightMeasureSpec);
+//        final Projection projection = getProjection();
+//        // Find rightmost and bottom-most child
+//        for (int i = 0; i < count; i++) {
+//            final View child = getChildAt(i);
+//            if (child.getVisibility() != GONE) {
+//
+//                final MapView.LayoutParams lp = (MapView.LayoutParams) child.getLayoutParams();
+//                final int childHeight = child.getMeasuredHeight();
+//                final int childWidth = child.getMeasuredWidth();
+//                projection.toMapPixels(lp.geoPoint, mPoint);
+//                final int x = (int) mPoint.x + getWidth() / 2;
+//                final int y = (int) mPoint.y + getHeight() / 2;
+//                int childRight = x;
+//                int childBottom = y;
+//                switch (lp.alignment) {
+//                    case MapView.LayoutParams.TOP_LEFT:
+//                        childRight = x + childWidth;
+//                        childBottom = y;
+//                        break;
+//                    case MapView.LayoutParams.TOP_CENTER:
+//                        childRight = x + childWidth / 2;
+//                        childBottom = y;
+//                        break;
+//                    case MapView.LayoutParams.TOP_RIGHT:
+//                        childRight = x;
+//                        childBottom = y;
+//                        break;
+//                    case MapView.LayoutParams.CENTER_LEFT:
+//                        childRight = x + childWidth;
+//                        childBottom = y + childHeight / 2;
+//                        break;
+//                    case MapView.LayoutParams.CENTER:
+//                        childRight = x + childWidth / 2;
+//                        childBottom = y + childHeight / 2;
+//                        break;
+//                    case MapView.LayoutParams.CENTER_RIGHT:
+//                        childRight = x;
+//                        childBottom = y + childHeight / 2;
+//                        break;
+//                    case MapView.LayoutParams.BOTTOM_LEFT:
+//                        childRight = x + childWidth;
+//                        childBottom = y + childHeight;
+//                        break;
+//                    case MapView.LayoutParams.BOTTOM_CENTER:
+//                        childRight = x + childWidth / 2;
+//                        childBottom = y + childHeight;
+//                        break;
+//                    case MapView.LayoutParams.BOTTOM_RIGHT:
+//                        childRight = x;
+//                        childBottom = y + childHeight;
+//                        break;
+//                }
+//                childRight += lp.offsetX;
+//                childBottom += lp.offsetY;
+//
+//                maxWidth = Math.max(maxWidth, childRight);
+//                maxHeight = Math.max(maxHeight, childBottom);
+//            }
+//        }
+//
+//        // Account for padding too
+//        maxWidth += getPaddingLeft() + getPaddingRight();
+//        maxHeight += getPaddingTop() + getPaddingBottom();
+//
+//        // Check against minimum height and width
+//        maxHeight = Math.max(maxHeight, getSuggestedMinimumHeight());
+//        maxWidth = Math.max(maxWidth, getSuggestedMinimumWidth());
+//
+//        setMeasuredDimension(resolveSize(maxWidth, widthMeasureSpec),
+//                resolveSize(maxHeight, heightMeasureSpec));
+//    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -1344,69 +1447,6 @@ public class MapView extends ViewGroup
             if (mBoundingBoxToZoomOn != null) {
                 zoomToBoundingBox(mBoundingBoxToZoomOn, mBoundingBoxToZoomOnRegionFit);
                 mBoundingBoxToZoomOn = null;
-            }
-        }
-    }
-
-    @Override
-    protected void onLayout(final boolean changed, final int l, final int t, final int r,
-                            final int b) {
-        final int count = getChildCount();
-
-        final Projection projection = getProjection();
-        for (int i = 0; i < count; i++) {
-            final View child = getChildAt(i);
-            if (child.getVisibility() != GONE) {
-
-                final MapView.LayoutParams lp = (MapView.LayoutParams) child.getLayoutParams();
-                final int childHeight = child.getMeasuredHeight();
-                final int childWidth = child.getMeasuredWidth();
-                projection.toMapPixels(lp.geoPoint, mPoint);
-                final int x = (int) mPoint.x + getWidth() / 2;
-                final int y = (int) mPoint.y + getHeight() / 2;
-                int childLeft = x;
-                int childTop = y;
-                switch (lp.alignment) {
-                    case MapView.LayoutParams.TOP_LEFT:
-                        childLeft = getPaddingLeft() + x;
-                        childTop = getPaddingTop() + y;
-                        break;
-                    case MapView.LayoutParams.TOP_CENTER:
-                        childLeft = getPaddingLeft() + x - childWidth / 2;
-                        childTop = getPaddingTop() + y;
-                        break;
-                    case MapView.LayoutParams.TOP_RIGHT:
-                        childLeft = getPaddingLeft() + x - childWidth;
-                        childTop = getPaddingTop() + y;
-                        break;
-                    case MapView.LayoutParams.CENTER_LEFT:
-                        childLeft = getPaddingLeft() + x;
-                        childTop = getPaddingTop() + y - childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.CENTER:
-                        childLeft = getPaddingLeft() + x - childWidth / 2;
-                        childTop = getPaddingTop() + y - childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.CENTER_RIGHT:
-                        childLeft = getPaddingLeft() + x - childWidth;
-                        childTop = getPaddingTop() + y - childHeight / 2;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_LEFT:
-                        childLeft = getPaddingLeft() + x;
-                        childTop = getPaddingTop() + y - childHeight;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_CENTER:
-                        childLeft = getPaddingLeft() + x - childWidth / 2;
-                        childTop = getPaddingTop() + y - childHeight;
-                        break;
-                    case MapView.LayoutParams.BOTTOM_RIGHT:
-                        childLeft = getPaddingLeft() + x - childWidth;
-                        childTop = getPaddingTop() + y - childHeight;
-                        break;
-                }
-                childLeft += lp.offsetX;
-                childTop += lp.offsetY;
-                child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
             }
         }
     }
@@ -1492,7 +1532,9 @@ public class MapView extends ViewGroup
 
             // can't use the scale detector's onTouchEvent() result as it always returns true (Android issue #42591)
             boolean result, isScaling;
-            mScaleGestureDetector.onTouchEvent(rotatedEvent);
+            if (rotatedEvent.getPointerCount() != 1) {
+                mScaleGestureDetector.onTouchEvent(rotatedEvent);
+            }
             isScaling = result = mScaleGestureDetector.isInProgress();
             if (!isScaling) {
                 // if no scaling is performed check for other gestures (fling, long tab, etc.)
@@ -1643,29 +1685,6 @@ public class MapView extends ViewGroup
     public void setBackgroundColor(final int pColor) {
         mTilesOverlay.setLoadingBackgroundColor(pColor);
         invalidate();
-    }
-
-    @Override
-    protected void onDraw(final Canvas c) {
-        super.onDraw(c);
-
-        mProjection = updateProjection();
-
-        // Save the current canvas matrix
-        c.save();
-
-        c.translate(getWidth() / 2, getHeight() / 2);
-        c.scale(mMultiTouchScale, mMultiTouchScale, mMultiTouchScalePoint.x,
-                mMultiTouchScalePoint.y);
-
-        // rotate Canvas
-        c.rotate(mapOrientation, mProjection.getScreenRect().exactCenterX(),
-                mProjection.getScreenRect().exactCenterY());
-
-        // Draw all Overlays.
-        this.getOverlayManager().draw(c, this);
-
-        c.restore();
     }
 
     /**
@@ -1848,11 +1867,12 @@ public class MapView extends ViewGroup
     /**
      * Per-child layout information associated with OpenStreetMapView.
      */
-    public static class LayoutParams extends ViewGroup.LayoutParams implements MapViewLayouts {
+    public static class LayoutParams extends FrameLayout.LayoutParams implements MapViewLayouts {
         /**
          * The location of the child within the map view.
          */
         public ILatLng geoPoint;
+        public PointF mapPoint = new PointF();;
 
         /**
          * The alignment the alignment of the view compared to the location.

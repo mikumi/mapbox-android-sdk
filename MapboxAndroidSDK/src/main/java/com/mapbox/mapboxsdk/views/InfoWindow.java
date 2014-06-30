@@ -90,7 +90,7 @@ public class InfoWindow {
                 MapView.LayoutParams.WRAP_CONTENT, position, MapView.LayoutParams.BOTTOM_CENTER,
                 offsetX, offsetY);
         close(); //if it was already opened
-        mMapView.addView(mView, lp);
+        mMapView.addTooltipView(mView, lp);
         mIsVisible = true;
         return this;
     }
