@@ -506,8 +506,10 @@ public class MapView extends FrameLayout
         if (mMapViewListener != null) {
             mMapViewListener.onTapMarker(MapView.this, marker);
         }
+
+        Tooltip oldTooltip = currentTooltip;
         closeCurrentTooltip();
-        if (toolTip != currentTooltip && marker.hasContent()) {
+        if (toolTip != oldTooltip && marker.hasContent()) {
             if (mMapViewListener != null) {
                 mMapViewListener.onShowMarker(MapView.this, marker);
             }
