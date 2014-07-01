@@ -87,6 +87,7 @@ public class Tooltip {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
+            if (Tooltip.this.boundMarker.isAnimated() == false) return;
             //make sure the view is measured first (almost never the case)
             int widthMeasureSpec = MeasureSpec.makeMeasureSpec(ViewGroup.LayoutParams.WRAP_CONTENT, MeasureSpec.UNSPECIFIED);
             int heightMeasureSpec = MeasureSpec.makeMeasureSpec(ViewGroup.LayoutParams.WRAP_CONTENT, MeasureSpec.UNSPECIFIED);
@@ -245,6 +246,7 @@ public class Tooltip {
      * @return this infowindow
      */
     public Tooltip open(Marker object, LatLng position, int offsetX, int offsetY) {
+        setBoundMarker(object);
         if (mTooltipView == null) {
             mTooltipView = createTooltipView(mMapView.getContext());
         }
@@ -283,7 +285,7 @@ public class Tooltip {
     public Tooltip close() {
         if (mIsVisible) {
             mIsVisible = false;
-            if (mTooltipView instanceof TooltipView) {
+            if (this.boundMarker.isAnimated() && mTooltipView instanceof TooltipView) {
                 ((TooltipView)mTooltipView).closeMeAnimated();
             }
             else {
@@ -345,6 +347,4 @@ public class Tooltip {
     public Marker getBoundMarker() {
         return boundMarker;
     }
-
-
 }

@@ -46,6 +46,7 @@ public class Marker {
     private boolean bubbleShowing;
     private ItemizedOverlay mParentHolder;
 
+    private boolean mAnimated = true;
 
     private float mMinZoom = 0;
     private float mMaxZoom = 22;
@@ -432,13 +433,12 @@ public class Marker {
         Point tooltipH = getAnchor(tooltip.getHotspot());
         markerH.offset(-tooltipH.x, tooltipH.y);
         tooltip.setMapView(aMapView);
-        if (panIntoView) {
         tooltip.open(this, this.getPoint(), markerH.x, markerH.y);
+        if (panIntoView) {
             aMapView.getController().animateTo(getPoint());
         }
 
         bubbleShowing = true;
-        tooltip.setBoundMarker(this);
     }
 
     /**
@@ -503,5 +503,12 @@ public class Marker {
     public void setMaxZoom(final float zoom) {
         mMaxZoom = zoom;
         invalidate();
+    }
+
+    public void setAnimated(final boolean animated) {
+        mAnimated = animated;
+    }
+    public boolean isAnimated() {
+        return mAnimated;
     }
 }
