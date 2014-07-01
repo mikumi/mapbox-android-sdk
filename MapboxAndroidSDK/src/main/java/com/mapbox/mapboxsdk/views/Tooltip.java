@@ -65,7 +65,6 @@ public class Tooltip {
 
         public TooltipView(Context context) {
             super(context);
-            setWillNotDraw(false);
             setArrowHeightDp(10);
             setBorderRadiusDp(4);
             this.mPaint = new Paint();
@@ -139,8 +138,9 @@ public class Tooltip {
         }
 
         @Override
-        protected void onDraw(Canvas canvas) {
-            canvas.drawPath(mPath, this.mPaint);
+        protected void dispatchDraw (Canvas c) {
+            c.drawPath(mPath, this.mPaint);
+            super.dispatchDraw(c);
         }
 
         public void setBackgroundColor(final int color) {
