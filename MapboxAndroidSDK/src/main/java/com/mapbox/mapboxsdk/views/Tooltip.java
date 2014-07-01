@@ -253,16 +253,17 @@ public class Tooltip {
 
         if (mInfoView == null) {
             mInfoView = createInfoView(mMapView.getContext());
-            // default behavior: close it when clicking on the tooltip:
-//            mInfoView.setOnTouchListener(new View.OnTouchListener() {
-//                @Override
-//                public boolean onTouch(View v, MotionEvent e) {
-//                    if (e.getAction() == MotionEvent.ACTION_UP) {
-//                        close();
-//                    }
-//                    return true;
-//                }
-//            });
+            // the onTouchListener is important as will prevent the mapview from getting
+            // the single tap event
+            ((View)mInfoView).setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent e) {
+                    if (e.getAction() == MotionEvent.ACTION_UP) {
+                        Tooltip.this.onTouchedView(v);
+                    }
+                    return true;
+                }
+            });
         }
         if (((View) mInfoView).getParent() != mTooltipView) {
             mTooltipView.addView((View) mInfoView);
@@ -321,6 +322,9 @@ public class Tooltip {
         mMapView = mapView;
     }
 
+    protected void onTouchedView(View view) {
+//        close();
+    }
 
 
     /**
