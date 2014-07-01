@@ -5,11 +5,10 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
+
 import com.google.common.base.Strings;
-import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.views.InfoWindow;
+import com.mapbox.mapboxsdk.views.Tooltip;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.util.Projection;
 
@@ -46,6 +45,10 @@ public class Marker {
     private Object mRelatedObject; //reference to an object (of any kind) linked to this item.
     private boolean bubbleShowing;
     private ItemizedOverlay mParentHolder;
+
+
+    private float mMinZoom = 0;
+    private float mMaxZoom = 22;
 
     /**
      * Construct a new Marker, given title, description, and place
@@ -105,31 +108,31 @@ public class Marker {
                 this.mImage != null;
     }
 
-    protected InfoWindow createTooltip(MapView mv) {
-        return new InfoWindow(R.layout.tooltip, mv);
+    protected Tooltip createTooltip() {
+        return new Tooltip(context);
     }
 
-    private InfoWindow mToolTip;
+    private Tooltip mToolTip;
 
     /**
      * Get this marker's tooltip, creating it if it doesn't exist yet.
-     * @param mv
      * @return
      */
-    public InfoWindow getToolTip(MapView mv) {
-        if (mToolTip == null || mToolTip.getMapView() != mv) {
-            mToolTip = createTooltip(mv);
+    public Tooltip getTooltip() {
+        if (mToolTip == null) {
+            mToolTip = createTooltip();
         }
         return mToolTip;
     }
 
-    public void closeToolTip() {
+    public void closeTooltip() {
         if (mToolTip != null && mToolTip.equals(mToolTip.getMapView().getCurrentTooltip())) {
             mToolTip.getMapView().closeCurrentTooltip();
         }
     }
 
     public void blur() {
+        bubbleShowing = false;
         if (mParentHolder != null) {
             mParentHolder.blurItem(this);
         }
@@ -424,13 +427,13 @@ public class Marker {
      * <ul>image and sub-description if any.</ul>
      * and centers the map view on the item if panIntoView is true. <br>
      */
-    public void showBubble(InfoWindow tooltip, MapView aMapView, boolean panIntoView) {
-        //offset the tooltip to be top-centered on the marker:
+    public void showTooltip(Tooltip tooltip, MapView aMapView, boolean panIntoView) {
         Point markerH = getAnchor();
-        Point tooltipH = getAnchor(HotspotPlace.TOP_CENTER);
+        Point tooltipH = getAnchor(tooltip.getHotspot());
         markerH.offset(-tooltipH.x, tooltipH.y);
-        tooltip.open(this, this.getPoint(), markerH.x, markerH.y);
+        tooltip.setMapView(aMapView);
         if (panIntoView) {
+        tooltip.open(this, this.getPoint(), markerH.x, markerH.y);
             aMapView.getController().animateTo(getPoint());
         }
 
@@ -449,6 +452,18 @@ public class Marker {
 
     public PointF getPositionOnMap() {
         return mCurMapCoords;
+    }
+
+    public boolean shouldDraw() {
+        if (mapView == null) {
+            return false;
+        }
+        if (bubbleShowing) {
+            return true;
+        }
+        float zoomDelta = (float) (Math.log(mapView.getScale()) / Math.log(2d));
+        float zoom = mapView.getZoomLevel() + zoomDelta;
+        return zoom > mMinZoom && zoom < mMaxZoom;
     }
 
     public void updateDrawingPosition() {
@@ -478,5 +493,15 @@ public class Marker {
                 mapView.invalidateMapCoordinates(newRect);
             }
         });
+    }
+
+    public void setMinZoom(final float zoom) {
+        mMinZoom = zoom;
+        invalidate();
+    }
+
+    public void setMaxZoom(final float zoom) {
+        mMaxZoom = zoom;
+        invalidate();
     }
 }

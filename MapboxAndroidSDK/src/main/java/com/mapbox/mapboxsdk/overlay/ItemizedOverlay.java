@@ -153,7 +153,9 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
      */
     protected void onDrawItem(ISafeCanvas canvas, final Marker item, final Projection projection,
             final float aMapOrientation, final RectF mapBounds, final float mapScale) {
-
+        if (!item.shouldDraw()) {
+            return;
+        }
         item.updateDrawingPosition();
         final PointF position = item.getPositionOnMap();
         final Point roundedCoords = new Point((int) position.x, (int) position.y);

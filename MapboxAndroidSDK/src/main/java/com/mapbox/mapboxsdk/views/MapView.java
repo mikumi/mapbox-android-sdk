@@ -158,7 +158,7 @@ public class MapView extends FrameLayout
 
     private TilesLoadedListener tilesLoadedListener;
     TileLoadedListener tileLoadedListener;
-    private InfoWindow currentTooltip;
+    private Tooltip currentTooltip;
 
     private int mDefaultPinRes = R.drawable.defpin;
     private Drawable mDefaultPinDrawable;
@@ -499,7 +499,7 @@ public class MapView extends FrameLayout
      * Select a marker, showing a tooltip if the marker has content that would appear within it.
      */
     public void selectMarker(final Marker marker) {
-        InfoWindow toolTip = marker.getToolTip(MapView.this);
+        Tooltip toolTip = marker.getTooltip();
 
         if (mMapViewListener != null) {
             mMapViewListener.onTapMarker(MapView.this, marker);
@@ -510,7 +510,7 @@ public class MapView extends FrameLayout
                 mMapViewListener.onShowMarker(MapView.this, marker);
             }
             currentTooltip = toolTip;
-            marker.showBubble(currentTooltip, MapView.this, true);
+            marker.showTooltip(currentTooltip, MapView.this, true);
         }
     }
 
@@ -582,7 +582,7 @@ public class MapView extends FrameLayout
      * Get the current tooltip of this map if there is one being displayed.
      * @return
      */
-    public InfoWindow getCurrentTooltip() {
+    public Tooltip getCurrentTooltip() {
         return currentTooltip;
     }
 
@@ -820,7 +820,6 @@ public class MapView extends FrameLayout
     }
 
     protected MapView setZoomInternal(final float aZoomLevel, ILatLng center, final PointF decale) {
-
         if (center == null) {
             center = getCenter();
         }
@@ -885,6 +884,7 @@ public class MapView extends FrameLayout
 
         // Allows any views fixed to a Location in the MapView to adjust
         this.requestLayout();
+        this.invalidate();
         return this;
     }
 
