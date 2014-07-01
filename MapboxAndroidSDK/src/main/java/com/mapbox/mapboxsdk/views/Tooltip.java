@@ -95,7 +95,7 @@ public class Tooltip {
             final int h = getMeasuredHeight();
             ViewHelper.setPivotX(this, w / 2);
             ViewHelper.setPivotY(this, h);
-            ObjectAnimator anim = ObjectAnimator.ofFloat(this, "scale", 0.1f, 1.0f);
+            ObjectAnimator anim = ObjectAnimator.ofFloat(this, "scale", 0.01f, 1.0f);
             anim.setInterpolator(new OvershootInterpolator());
             anim.setDuration(200);
             anim.start();
