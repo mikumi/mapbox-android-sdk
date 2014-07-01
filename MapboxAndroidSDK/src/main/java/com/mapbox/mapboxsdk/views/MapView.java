@@ -465,7 +465,9 @@ public class MapView extends FrameLayout
     }
 
     public void addTooltipView(final View tooltipView, final MapView.LayoutParams params) {
-        addView(tooltipView, params);
+        if (tooltipView.getParent() != this) {
+            addView(tooltipView, params);
+        }
     }
 
     /**
