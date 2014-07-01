@@ -443,8 +443,6 @@ public class TilesOverlay extends SafeDrawOverlay {
                     final Canvas canvas = new Canvas(bitmap);
                     canvas.drawBitmap(oldBitmap, mSrcRect, mDestRect, null);
                     mNewTiles.put(pTile, bitmap);
-                    Log.d(TAG, "rescaled new tile : " + pTile);
-
                 }
             }
         }
