@@ -27,7 +27,7 @@ public class Marker {
     private final RectF mMyLocationPreviousRect = new RectF(0, 0, 0, 0);
     protected final PointF mCurMapCoords = new PointF();
 
-    private Context context;
+    protected Context context;
     private MapView mapView;
     private Icon icon;
 
