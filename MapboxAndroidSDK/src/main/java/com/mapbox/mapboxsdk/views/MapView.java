@@ -158,7 +158,7 @@ public class MapView extends FrameLayout
 
     private TilesLoadedListener tilesLoadedListener;
     TileLoadedListener tileLoadedListener;
-    private Tooltip currentTooltip;
+    private InfoWindow currentInfoWindow;
 
     private int mDefaultPinRes = R.drawable.defpin;
     private Drawable mDefaultPinDrawable;
@@ -501,20 +501,20 @@ public class MapView extends FrameLayout
      * Select a marker, showing a tooltip if the marker has content that would appear within it.
      */
     public void selectMarker(final Marker marker) {
-        Tooltip toolTip = marker.getTooltip();
+        InfoWindow toolTip = marker.getInfoWindow();
 
         if (mMapViewListener != null) {
             mMapViewListener.onTapMarker(MapView.this, marker);
         }
 
-        Tooltip oldTooltip = currentTooltip;
-        closeCurrentTooltip();
-        if (toolTip != oldTooltip && marker.hasContent()) {
+        InfoWindow oldInfoWindow = currentInfoWindow;
+        closeCurrentInfoWindow();
+        if (toolTip != oldInfoWindow && marker.hasContent()) {
             if (mMapViewListener != null) {
                 mMapViewListener.onShowMarker(MapView.this, marker);
             }
-            currentTooltip = toolTip;
-            marker.showTooltip(currentTooltip, MapView.this, true);
+            currentInfoWindow = toolTip;
+            marker.showInfoWindow(currentInfoWindow, MapView.this, true);
         }
     }
 
@@ -570,15 +570,15 @@ public class MapView extends FrameLayout
     }
 
     /**
-     * Close the currently-displayed tooltip, if any.
+     * Close the currently-displayed infowindow, if any.
      */
-    public void closeCurrentTooltip() {
-        if (currentTooltip != null) {
+    public void closeCurrentInfoWindow() {
+        if (currentInfoWindow != null) {
             if (mMapViewListener != null) {
-                mMapViewListener.onHidemarker(this, currentTooltip.getBoundMarker());
+                mMapViewListener.onHidemarker(this, currentInfoWindow.getBoundMarker());
             }
-            currentTooltip.close();
-            currentTooltip = null;
+            currentInfoWindow.close();
+            currentInfoWindow = null;
         }
     }
 
@@ -586,8 +586,8 @@ public class MapView extends FrameLayout
      * Get the current tooltip of this map if there is one being displayed.
      * @return
      */
-    public Tooltip getCurrentTooltip() {
-        return currentTooltip;
+    public InfoWindow getCurrentInfoWindow() {
+        return currentInfoWindow;
     }
 
     /**
@@ -617,7 +617,7 @@ public class MapView extends FrameLayout
      * @return whether the event action is triggered or not
      */
     public boolean singleTapUpHelper(final ILatLng p) {
-        closeCurrentTooltip();
+        closeCurrentInfoWindow();
         onTap(p);
         return true;
     }

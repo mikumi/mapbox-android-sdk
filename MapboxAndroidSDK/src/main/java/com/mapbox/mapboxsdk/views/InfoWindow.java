@@ -11,8 +11,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.BounceInterpolator;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -21,31 +19,23 @@ import android.widget.TextView;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.overlay.Marker;
-import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
 import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.AnimatorListenerAdapter;
 import com.nineoldandroids.animation.ObjectAnimator;
-import com.nineoldandroids.animation.PropertyValuesHolder;
 import com.nineoldandroids.view.ViewHelper;
 
 
 /**
  * A tooltip view
  */
-public class Tooltip {
-
-    public interface TooltipInfoView {
-        public void setText(final String title);
-        public void setDescription(final String snippet);
-        public void setSubDescription(final String subDesc);
-    }
+public class InfoWindow {
 
     private Marker boundMarker;
 
     private MapView mMapView;
     private boolean mIsVisible;
-    private ViewGroup mTooltipView;
-    private TooltipInfoView mInfoView;
+    private ViewGroup mInfoWindowView;
+    private View mInfoView;
     private Marker.HotspotPlace mHostpotPlace = Marker.HotspotPlace.TOP_CENTER;
     private int mLayoutAnchor = MapView.LayoutParams.BOTTOM_CENTER;
 
@@ -56,14 +46,14 @@ public class Tooltip {
         return mHostpotPlace;
     }
 
-    public class TooltipView extends RelativeLayout {
+    public class InfoWindowContainerView extends RelativeLayout {
         private int mBackgroundColor = Color.WHITE;
         private Paint mPaint;
         private Path mPath = new Path();
         private int mArrowHeight;
         private int mBorderRadius;
 
-        public TooltipView(Context context) {
+        public InfoWindowContainerView(Context context) {
             super(context);
             setArrowHeightDp(10);
             setBorderRadiusDp(4);
@@ -86,7 +76,7 @@ public class Tooltip {
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            if (Tooltip.this.boundMarker.isAnimated() == false) return;
+            if (InfoWindow.this.boundMarker.isAnimated() == false) return;
             //make sure the view is measured first (almost never the case)
             int widthMeasureSpec = MeasureSpec.makeMeasureSpec(ViewGroup.LayoutParams.WRAP_CONTENT, MeasureSpec.UNSPECIFIED);
             int heightMeasureSpec = MeasureSpec.makeMeasureSpec(ViewGroup.LayoutParams.WRAP_CONTENT, MeasureSpec.UNSPECIFIED);
@@ -107,7 +97,7 @@ public class Tooltip {
 
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    ((ViewGroup) getParent()).removeView(TooltipView.this);
+                    ((ViewGroup) getParent()).removeView(InfoWindowContainerView.this);
                     super.onAnimationEnd(animation);
                 }
             });
@@ -162,7 +152,7 @@ public class Tooltip {
     }
 
 
-    public static class InfoView extends LinearLayout implements TooltipInfoView {
+    public static class InfoView extends LinearLayout {
         int mTitleId = 0;
         int mDescriptionId = 0;
         int mSubDescriptionId = 0;
@@ -184,7 +174,7 @@ public class Tooltip {
 
         /**
          * Given a context, set the resource ids for the layout
-         * of the Tooltip.
+         * of the InfoWindow.
          * @param context
          */
         private void setResIds(Context context) {
@@ -215,25 +205,29 @@ public class Tooltip {
                 subDescText.setVisibility(View.VISIBLE);
             }
         }
+
+        public void updateWithMarker(Marker marker) {
+            setText(marker.getTitle());
+            setDescription(marker.getDescription());
+            setSubDescription(marker.getSubDescription());
+        }
     }
 
 
-    protected ViewGroup createTooltipView(final Context context) {
-        TooltipView view = new TooltipView(context);
+    protected ViewGroup createContainerView(final Context context) {
+        InfoWindowContainerView view = new InfoWindowContainerView(context);
         return view;
     }
 
-    protected TooltipInfoView createInfoView(final Context context) {
+    protected View createInfoView(final Context context) {
         LayoutInflater inflater =
                 (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        TooltipInfoView view = (TooltipInfoView) inflater.inflate(R.layout.tooltip, null);
-        return view;
+        return inflater.inflate(R.layout.tooltip, null);
     }
 
 
-    public Tooltip(final Context context) {
+    public InfoWindow(final Context context) {
         mIsVisible = false;
-
     }
 
     /**
@@ -245,10 +239,10 @@ public class Tooltip {
      * This allows to offset the view from the object position.
      * @return this infowindow
      */
-    public Tooltip open(Marker object, LatLng position, int offsetX, int offsetY) {
+    public InfoWindow open(Marker object, LatLng position, int offsetX, int offsetY) {
         setBoundMarker(object);
-        if (mTooltipView == null) {
-            mTooltipView = createTooltipView(mMapView.getContext());
+        if (mInfoWindowView == null) {
+            mInfoWindowView = createContainerView(mMapView.getContext());
         }
 
         if (mInfoView == null) {
@@ -259,14 +253,14 @@ public class Tooltip {
                 @Override
                 public boolean onTouch(View v, MotionEvent e) {
                     if (e.getAction() == MotionEvent.ACTION_UP) {
-                        Tooltip.this.onTouchedView(v);
+                        InfoWindow.this.onTouchedView(v);
                     }
                     return true;
                 }
             });
         }
-        if (((View) mInfoView).getParent() != mTooltipView) {
-            mTooltipView.addView((View) mInfoView);
+        if (((View) mInfoView).getParent() != mInfoWindowView) {
+            mInfoWindowView.addView((View) mInfoView);
         }
 
         willOpen(object);
@@ -274,23 +268,23 @@ public class Tooltip {
                 MapView.LayoutParams.WRAP_CONTENT, position, mLayoutAnchor,
                 offsetX, offsetY);
         close(); //if it was already opened
-        mMapView.addTooltipView(mTooltipView, lp);
+        mMapView.addTooltipView(mInfoWindowView, lp);
         mIsVisible = true;
         return this;
     }
 
     /**
-     * Close this Tooltip if it is visible, otherwise don't do anything.
+     * Close this InfoWindow if it is visible, otherwise don't do anything.
      * @return this info window
      */
-    public Tooltip close() {
+    public InfoWindow close() {
         if (mIsVisible) {
             mIsVisible = false;
-            if (this.boundMarker.isAnimated() && mTooltipView instanceof TooltipView) {
-                ((TooltipView)mTooltipView).closeMeAnimated();
+            if (this.boundMarker.isAnimated() && mInfoWindowView instanceof InfoWindowContainerView) {
+                ((InfoWindowContainerView) mInfoWindowView).closeMeAnimated();
             }
             else {
-                ((ViewGroup) mTooltipView.getParent()).removeView(mTooltipView);
+                ((ViewGroup) mInfoWindowView.getParent()).removeView(mInfoWindowView);
             }
             this.boundMarker.blur();
             setBoundMarker(null);
@@ -304,13 +298,11 @@ public class Tooltip {
      *
      * @return the Android view
      */
-    public TooltipInfoView getInfoView() {return mInfoView;}
-    public ViewGroup getTooltipView() {
-        return mTooltipView;
-    }
+    public View getInfoView() {return mInfoView;}
+    public ViewGroup getContainerView() {return mInfoWindowView;}
 
     /**
-     * Returns the mapView this Tooltip is bound to
+     * Returns the mapView this InfoWindow is bound to
      *
      * @return the mapView
      */
@@ -328,22 +320,22 @@ public class Tooltip {
 
 
     /**
-     * Constructs the view that is displayed when the Tooltip opens.
+     * Constructs the view that is displayed when the InfoWindow opens.
      * This retrieves data from overlayItem and shows it in the tooltip.
      *
-     * @param overlayItem the tapped overlay item
+     * @param marker the tapped marker
      */
-    public void willOpen(Marker overlayItem) {
-        mInfoView.setText(overlayItem.getTitle());
-        mInfoView.setDescription(overlayItem.getDescription());
-        mInfoView.setSubDescription(overlayItem.getSubDescription());
+    public void willOpen(Marker marker) {
+        if (mInfoView instanceof InfoView) {
+            ((InfoView) mInfoView).updateWithMarker(marker);
+        }
     }
 
     public void onClose() {
         //by default, do nothing
     }
 
-    public Tooltip setBoundMarker(Marker aBoundMarker) {
+    public InfoWindow setBoundMarker(Marker aBoundMarker) {
         this.boundMarker = aBoundMarker;
         return this;
     }

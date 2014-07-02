@@ -8,7 +8,7 @@ import android.graphics.drawable.Drawable;
 
 import com.google.common.base.Strings;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.views.Tooltip;
+import com.mapbox.mapboxsdk.views.InfoWindow;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.util.Projection;
 
@@ -109,26 +109,26 @@ public class Marker {
                 this.mImage != null;
     }
 
-    protected Tooltip createTooltip() {
-        return new Tooltip(context);
+    protected InfoWindow createInfoWindow() {
+        return new InfoWindow(context);
     }
 
-    private Tooltip mToolTip;
+    private InfoWindow mInfoWindow;
 
     /**
      * Get this marker's tooltip, creating it if it doesn't exist yet.
      * @return
      */
-    public Tooltip getTooltip() {
-        if (mToolTip == null) {
-            mToolTip = createTooltip();
+    public InfoWindow getInfoWindow() {
+        if (mInfoWindow == null) {
+            mInfoWindow = createInfoWindow();
         }
-        return mToolTip;
+        return mInfoWindow;
     }
 
-    public void closeTooltip() {
-        if (mToolTip != null && mToolTip.equals(mToolTip.getMapView().getCurrentTooltip())) {
-            mToolTip.getMapView().closeCurrentTooltip();
+    public void closeInfoWindow() {
+        if (mInfoWindow != null && mInfoWindow.equals(mInfoWindow.getMapView().getCurrentInfoWindow())) {
+            mInfoWindow.getMapView().closeCurrentInfoWindow();
         }
     }
 
@@ -423,17 +423,17 @@ public class Marker {
     }
 
     /**
-     * Populates this tooltip with all item info:
+     * Populates this infoWindow with all item info:
      * <ul>title and description in any case, </ul>
      * <ul>image and sub-description if any.</ul>
      * and centers the map view on the item if panIntoView is true. <br>
      */
-    public void showTooltip(Tooltip tooltip, MapView aMapView, boolean panIntoView) {
+    public void showInfoWindow(InfoWindow infoWindow, MapView aMapView, boolean panIntoView) {
         Point markerH = getAnchor();
-        Point tooltipH = getAnchor(tooltip.getHotspot());
+        Point tooltipH = getAnchor(infoWindow.getHotspot());
         markerH.offset(-tooltipH.x, tooltipH.y);
-        tooltip.setMapView(aMapView);
-        tooltip.open(this, this.getPoint(), markerH.x, markerH.y);
+        infoWindow.setMapView(aMapView);
+        infoWindow.open(this, this.getPoint(), markerH.x, markerH.y);
         if (panIntoView) {
             aMapView.getController().animateTo(getPoint());
         }

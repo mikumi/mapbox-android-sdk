@@ -111,7 +111,7 @@ extends java.lang.object</pre>
       java.lang.string&nbsp;atitle,
       java.lang.string&nbsp;adescription,
       <a href="{{site.baseurl}}/api/latlng" title="class in com.mapbox.mapboxsdk.geometry">latlng</a>&nbsp;alatlng)</code>
-<div class="block">initialize a new marker object, adding it to a mapview and attaching a tooltip</div>
+<div class="block">initialize a new marker object, adding it to a mapview and attaching a infoWindow</div>
 </td>
 </tr>
 <tr class="rowcolor">
@@ -250,7 +250,7 @@ extends java.lang.object</pre>
 <tr class="rowcolor">
 <td class="colfirst"><code><a href="{{site.baseurl}}/api/infowindow" title="class in com.mapbox.mapboxsdk.views">infowindow</a></code></td>
 <td class="collast"><code><strong><a href="{{site.baseurl}}/api/mapview" title="class in com.mapbox.mapboxsdk.views">mapview</a>&nbsp;mv)</code>
-<div class="block">get this marker's tooltip, creating it if it doesn't exist yet.</div>
+<div class="block">get this marker's infoWindow, creating it if it doesn't exist yet.</div>
 </td>
 </tr>
 <tr class="altcolor">
@@ -331,10 +331,10 @@ extends java.lang.object</pre>
 </tr>
 <tr class="altcolor">
 <td class="colfirst"><code>void</code></td>
-<td class="collast"><code><strong><a href="{{site.baseurl}}/api/infowindow" title="class in com.mapbox.mapboxsdk.views">infowindow</a>&nbsp;tooltip,
+<td class="collast"><code><strong><a href="{{site.baseurl}}/api/infowindow" title="class in com.mapbox.mapboxsdk.views">infowindow</a>&nbsp;infoWindow,
           <a href="{{site.baseurl}}/api/mapview" title="class in com.mapbox.mapboxsdk.views">mapview</a>&nbsp;amapview,
           boolean&nbsp;panintoview)</code>
-<div class="block">populates this tooltip with all item info:
+<div class="block">populates this infoWindow with all item info:
  title and description in any case, 
  image and sub-description if any.
  and centers the map view on the item if panintoview is true.</div>
@@ -471,8 +471,8 @@ extends java.lang.object</pre>
       java.lang.string&nbsp;atitle,
       java.lang.string&nbsp;adescription,
       <a href="{{site.baseurl}}/api/latlng" title="class in com.mapbox.mapboxsdk.geometry">latlng</a>&nbsp;alatlng)</pre>
-<div class="block">initialize a new marker object, adding it to a mapview and attaching a tooltip</div>
-<dl><dt><span class="strong">parameters:</span></dt><dd><code>mv</code> - a mapview</dd><dd><code>atitle</code> - the title of the marker, in a potential tooltip</dd><dd><code>adescription</code> - the description of the marker, in a tooltip</dd><dd><code>alatlng</code> - the location of the marker</dd></dl>
+<div class="block">initialize a new marker object, adding it to a mapview and attaching a infoWindow</div>
+<dl><dt><span class="strong">parameters:</span></dt><dd><code>mv</code> - a mapview</dd><dd><code>atitle</code> - the title of the marker, in a potential infoWindow</dd><dd><code>adescription</code> - the description of the marker, in a infoWindow</dd><dd><code>alatlng</code> - the location of the marker</dd></dl>
 
 
 
@@ -523,7 +523,7 @@ extends java.lang.object</pre>
 
 <h4>gettooltip</h4>
 <pre>public&nbsp;<a href="{{site.baseurl}}/api/mapview" title="class in com.mapbox.mapboxsdk.views">mapview</a>&nbsp;mv)</pre>
-<div class="block">get this marker's tooltip, creating it if it doesn't exist yet.</div>
+<div class="block">get this marker's infoWindow, creating it if it doesn't exist yet.</div>
 <dl><dt><span class="strong">parameters:</span></dt><dd><code>mv</code> - </dd>
 <dt><span class="strong">returns:</span></dt><dd></dd></dl>
 
@@ -851,10 +851,10 @@ extends java.lang.object</pre>
 
 
 <h4>showbubble</h4>
-<pre>public&nbsp;void&nbsp;showbubble(<a href="{{site.baseurl}}/api/infowindow" title="class in com.mapbox.mapboxsdk.views">infowindow</a>&nbsp;tooltip,
+<pre>public&nbsp;void&nbsp;showbubble(<a href="{{site.baseurl}}/api/infowindow" title="class in com.mapbox.mapboxsdk.views">infowindow</a>&nbsp;infoWindow,
               <a href="{{site.baseurl}}/api/mapview" title="class in com.mapbox.mapboxsdk.views">mapview</a>&nbsp;amapview,
               boolean&nbsp;panintoview)</pre>
-<div class="block">populates this tooltip with all item info:
+<div class="block">populates this infoWindow with all item info:
  <ul>title and description in any case, 
  <ul>image and sub-description if any.
  and centers the map view on the item if panintoview is true. </div>
