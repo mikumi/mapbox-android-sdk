@@ -14,7 +14,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import java.lang.reflect.Field;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 public class BitmapUtils {
@@ -22,23 +21,10 @@ public class BitmapUtils {
     public static final int[] EXPIRED = new int[] { -1 };
 
     public static BitmapFactory.Options getBitmapOptions(DisplayMetrics mDisplayMetrics) {
-        try {
-            // TODO I think this can all be done without reflection now because all these properties are SDK 4
-            final Field density = DisplayMetrics.class.getDeclaredField("DENSITY_DEFAULT");
-            final Field inDensity = BitmapFactory.Options.class.getDeclaredField("inDensity");
-            final Field inTargetDensity =
-                    BitmapFactory.Options.class.getDeclaredField("inTargetDensity");
-            final Field targetDensity = DisplayMetrics.class.getDeclaredField("densityDpi");
-            final BitmapFactory.Options options = new BitmapFactory.Options();
-            inDensity.setInt(options, density.getInt(null));
-            inTargetDensity.setInt(options, targetDensity.getInt(mDisplayMetrics));
-            return options;
-        } catch (final IllegalAccessException ex) {
-            Log.d(TAG, "Couldn't access fields.", ex);
-        } catch (final NoSuchFieldException ex) {
-            Log.d(TAG, "Couldn't find fields.", ex);
-        }
-        return null;
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        options.inTargetDensity = mDisplayMetrics.densityDpi;
+        return options;
     }
 
     public static boolean isCacheDrawableExpired(Drawable drawable) {
@@ -69,7 +55,13 @@ public class BitmapUtils {
         if (largeHeap && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             memoryClass = ActivityManagerHoneycomb.getLargeMemoryClass(am);
         }
+        Log.d(TAG, "LargeHeap enabled? = '" + largeHeap + "'");
         // Target ~15% of the available heap.
-        return 1024 * 1024 * memoryClass / 7;
+        int heapRes = 1024 * 1024 * memoryClass / 7;
+        Log.d(TAG, "Heap Reserve Request For Cache Size = '" + heapRes + "'");
+        ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+        am.getMemoryInfo(memoryInfo);
+        Log.d(TAG, "Available Memory = '" + memoryInfo.availMem + "'");
+        return heapRes;
     }
 }
