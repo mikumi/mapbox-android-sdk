@@ -581,6 +581,12 @@ public class MapView extends FrameLayout
             currentInfoWindow = null;
         }
     }
+    
+    public void onInfoWindowClick(Marker marker) {
+        if (mMapViewListener != null) {
+            mMapViewListener.onInfoWindowClick(marker);
+        }
+    }
 
     /**
      * Get the current tooltip of this map if there is one being displayed.

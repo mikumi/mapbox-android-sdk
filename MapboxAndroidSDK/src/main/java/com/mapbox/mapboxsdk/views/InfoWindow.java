@@ -10,6 +10,7 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.LinearLayout;
@@ -216,6 +217,13 @@ public class InfoWindow {
 
     protected ViewGroup createContainerView(final Context context) {
         InfoWindowContainerView view = new InfoWindowContainerView(context);
+        view.setOnClickListener(new OnClickListener() {
+            
+            @Override
+            public void onClick(View v) {
+                mMapView.onInfoWindowClick(boundMarker);
+            }
+        });
         return view;
     }
 
@@ -247,17 +255,7 @@ public class InfoWindow {
 
         if (mInfoView == null) {
             mInfoView = createInfoView(mMapView.getContext());
-            // the onTouchListener is important as will prevent the mapview from getting
-            // the single tap event
-            ((View)mInfoView).setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent e) {
-                    if (e.getAction() == MotionEvent.ACTION_UP) {
-                        InfoWindow.this.onTouchedView(v);
-                    }
-                    return true;
-                }
-            });
+            mInfoView.setClickable(false);
         }
         if (((View) mInfoView).getParent() != mInfoWindowView) {
             mInfoWindowView.addView((View) mInfoView);
