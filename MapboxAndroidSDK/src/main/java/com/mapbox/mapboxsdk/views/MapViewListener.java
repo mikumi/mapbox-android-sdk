@@ -6,7 +6,8 @@ import com.mapbox.mapboxsdk.overlay.Marker;
 public interface MapViewListener {
     public void onShowMarker(final MapView pMapView, final Marker pMarker);
 
-    public void onHidemarker(final MapView pMapView, final Marker pMarker);
+    public void onHideMarker(final MapView pMapView, final Marker pMarker);
+    
     public void onInfoWindowClick(final Marker pMarker);
 
     public void onTapMarker(final MapView pMapView, final Marker pMarker);

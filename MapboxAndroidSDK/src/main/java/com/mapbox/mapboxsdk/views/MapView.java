@@ -575,7 +575,7 @@ public class MapView extends FrameLayout
     public void closeCurrentInfoWindow() {
         if (currentInfoWindow != null) {
             if (mMapViewListener != null) {
-                mMapViewListener.onHidemarker(this, currentInfoWindow.getBoundMarker());
+                mMapViewListener.onHideMarker(this, currentInfoWindow.getBoundMarker());
             }
             currentInfoWindow.close();
             currentInfoWindow = null;
