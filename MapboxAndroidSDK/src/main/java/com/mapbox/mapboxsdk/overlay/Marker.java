@@ -339,6 +339,13 @@ public class Marker {
     public PointF getPositionOnScreen(final Projection projection, final PointF reuse) {
         return projection.toPixels(mCurMapCoords, reuse);
     }
+    
+    public PointF getPositionOnScreen(final PointF reuse) {
+        if (mapView != null) {
+            return getPositionOnScreen(mapView.getProjection(), reuse);
+        }
+        return null;
+    }
 
     public PointF getDrawingPositionOnScreen(final Projection projection, PointF reuse) {
         reuse = getPositionOnScreen(projection, reuse);
@@ -453,6 +460,10 @@ public class Marker {
     public PointF getPositionOnMap() {
         return mCurMapCoords;
     }
+    
+    public LatLng getPosition() {
+        return this.mLatLng;
+    }
 
     public boolean shouldDraw() {
         if (mapView == null) {
@@ -510,5 +521,9 @@ public class Marker {
     }
     public boolean isAnimated() {
         return mAnimated;
+    }
+    
+    public boolean isInfoWindowShown() {
+        return bubbleShowing;
     }
 }
