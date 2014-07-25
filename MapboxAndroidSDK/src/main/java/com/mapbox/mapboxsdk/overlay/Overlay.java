@@ -236,12 +236,12 @@ public abstract class Overlay {
         canvas.rotate(-aMapOrientation, origin.x, origin.y);
         canvas.translate(origin.x + offset.x, origin.y + offset.y);
         drawable.draw(canvas);
-        Paint paint = new Paint();
-        paint.setColor(Color.RED);
-        paint.setStrokeWidth(3);
-        canvas.drawLine(0, -9, 0, 9, paint);
-        canvas.drawLine(-9, 0, 9, 0, paint);
-        canvas.drawRect(drawable.getBounds(), paint);
+//        Paint paint = new Paint();
+//        paint.setColor(Color.RED);
+//        paint.setStrokeWidth(3);
+//        canvas.drawLine(0, -9, 0, 9, paint);
+//        canvas.drawLine(-9, 0, 9, 0, paint);
+//        canvas.drawRect(drawable.getBounds(), paint);
         canvas.restore();
     }
 
