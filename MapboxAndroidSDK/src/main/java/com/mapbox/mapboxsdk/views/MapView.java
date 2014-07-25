@@ -143,6 +143,12 @@ public class MapView extends FrameLayout
     }
 
     private OnMyLocationChangeListener mOnMyLocationChangeListener;
+    public void setOnMyLocationChangeListener (OnMyLocationChangeListener listener) {
+        mOnMyLocationChangeListener = listener;
+        if (mLocationOverlay != null) {
+            mLocationOverlay.setOnMyLocationChangeListener(mOnMyLocationChangeListener);
+        }
+    }
     public static interface OnMyLocationChangeListener {
         public abstract void onMyLocationChange (Location location);
     }
@@ -1857,6 +1863,9 @@ public class MapView extends FrameLayout
     private UserLocationOverlay getOrCreateLocationOverlay() {
         if (mLocationOverlay == null) {
             mLocationOverlay = new UserLocationOverlay(new GpsLocationProvider(getContext()), this);
+            if (mOnMyLocationChangeListener != null) {
+                mLocationOverlay.setOnMyLocationChangeListener(mOnMyLocationChangeListener);
+            }
             addOverlay(mLocationOverlay);
         }
         return mLocationOverlay;

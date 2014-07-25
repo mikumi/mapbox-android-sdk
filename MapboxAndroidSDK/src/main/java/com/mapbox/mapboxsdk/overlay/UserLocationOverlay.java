@@ -454,8 +454,16 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
         return true;
     }
 
+    private MapView.OnMyLocationChangeListener mOnMyLocationChangeListener;
+    public void setOnMyLocationChangeListener (MapView.OnMyLocationChangeListener listener) {
+        mOnMyLocationChangeListener = listener;
+    }
+
     private void updateMyLocation(final Location location) {
         mLocation = location;
+        if (mOnMyLocationChangeListener != null) {
+            mOnMyLocationChangeListener.onMyLocationChange(mLocation);
+        }
         if (mLocation == null) {
             mLatLng = null;
             return;
