@@ -20,6 +20,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
     private int mDrawnItemsLimit = Integer.MAX_VALUE;
     private MapView view;
     private Context context;
+    private boolean mSortByLatitude = true;
 
     public ItemizedIconOverlay(final Context pContext, final List<Marker> pList,
             final com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay.OnItemGestureListener<Marker> pOnItemGestureListener) {
@@ -32,21 +33,20 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         this.context = pContext;
         this.mItemList = pList;
         this.mOnItemGestureListener = pOnItemGestureListener;
-        if (sortList) {
-            sortListByLatitude();
-        }
         populate();
     }
 
-    /**
-     * Sorts List of Marker by Latitude
-     */
-    private void sortListByLatitude() {
-        Collections.sort(mItemList, new Comparator<Marker>() {
-            public int compare(Marker a, Marker b) {
-                return Double.valueOf(a.getPoint().getLatitude()).compareTo(b.getPoint().getLatitude());
-            }
-        });
+    @Override
+    protected void populate() {
+        if (mSortByLatitude) {
+            Collections.sort(mItemList, new Comparator<Marker>() {
+                public int compare(Marker a, Marker b) {
+                    return Double.valueOf(a.getPoint().getLatitude()).compareTo(b.getPoint().getLatitude());
+                }
+            });
+        }
+        super.populate();
+
     }
 
     @Override
