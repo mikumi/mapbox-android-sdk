@@ -101,10 +101,8 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         final Projection pj = mapView.getProjection();
         final int size = this.mInternalItemList.size() - 1;
 
-        final RectF bounds =
-                new RectF(0, 0, mapView.getMeasuredWidth(), mapView.getMeasuredHeight());
-        pj.rotateRect(bounds);
         final float mapScale = 1 / mapView.getScale();
+        final RectF bounds = pj.getTransformScreenRect();
 
     /* Draw in backward cycle, so the items with the least index are on the front. */
         for (int i = size; i >= 0; i--) {
@@ -145,6 +143,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         return mInternalItemList.get(position);
     }
 
+
     /**
      * Draws an item located at the provided screen coordinates to the canvas.
      *
@@ -159,7 +158,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         item.updateDrawingPosition();
         final PointF position = item.getPositionOnMap();
         final Point roundedCoords = new Point((int) position.x, (int) position.y);
-        if (!RectF.intersects(mapBounds, item.getDrawingBounds(projection, null))) {
+        if (!RectF.intersects(mapBounds, item.getMapDrawingBounds(projection, null))) {
             //dont draw item if offscreen
             return;
         }
