@@ -90,10 +90,10 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         final Projection projection = mapView.getProjection();
         final float x = event.getX();
         final float y = event.getY();
-        for (int i = 0; i < this.mItemList.size(); ++i) {
-            final Marker item = getItem(i);
+        for (int i = 0; i < this.mVisibleMarkers.size(); ++i) {
+            final Marker item = mVisibleMarkers.get(i);
             if (markerHitTest(item, projection, x, y)) {
-                if (task.run(i)) {
+                if (task.run(item)) {
                     this.setFocus(item);
                     return true;
                 }
@@ -168,12 +168,12 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
     public boolean onSingleTapConfirmed(final MotionEvent event, final MapView mapView) {
         return (activateSelectedItems(event, mapView, new ActiveItem() {
             @Override
-            public boolean run(final int index) {
+            public boolean run(final Marker marker) {
                 final ItemizedIconOverlay that = ItemizedIconOverlay.this;
                 if (that.mOnItemGestureListener == null) {
                     return false;
                 }
-                return onSingleTapUpHelper(index, that.mItemList.get(index), mapView);
+                return onSingleTapUpHelper(mItemList.indexOf(marker), marker, mapView);
             }
         }));
     }
@@ -187,12 +187,12 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
     public boolean onLongPress(final MotionEvent event, final MapView mapView) {
         return (activateSelectedItems(event, mapView, new ActiveItem() {
             @Override
-            public boolean run(final int index) {
+            public boolean run(final Marker marker) {
                 final ItemizedIconOverlay that = ItemizedIconOverlay.this;
                 if (that.mOnItemGestureListener == null) {
                     return false;
                 }
-                return onLongPressHelper(index, getItem(index));
+                return onLongPressHelper(mItemList.indexOf(marker), marker);
             }
         }));
     }
@@ -243,6 +243,6 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
     }
 
     public static interface ActiveItem {
-        public boolean run(final int aIndex);
+        public boolean run(final Marker marker);
     }
 }

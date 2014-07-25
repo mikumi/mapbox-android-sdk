@@ -30,6 +30,7 @@ import java.util.ArrayList;
 public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay.Snappable {
 
     private final ArrayList<Marker> mInternalItemList;
+    protected final ArrayList<Marker> mVisibleMarkers;
     protected boolean mDrawFocusedItem = true;
     private Marker mFocusedItem;
     private boolean mPendingFocusChangedEvent = false;
@@ -61,6 +62,21 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         }
 
         mInternalItemList = new ArrayList<Marker>();
+        mVisibleMarkers = new ArrayList<Marker>();
+    }
+    
+    private boolean shouldDrawItem( final Marker item, final Projection projection,
+            final RectF mapBounds) {
+        if (!item.shouldDraw()) {
+            return false;
+        }
+        item.updateDrawingPosition();
+        if (!RectF.intersects(mapBounds, item.getMapDrawingBounds(projection, null))) {
+            //dont draw item if offscreen
+            return false;
+        }
+        mVisibleMarkers.add(item);
+        return true;
     }
 
     /**
@@ -103,17 +119,24 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
 
         final float mapScale = 1 / mapView.getScale();
         final RectF bounds = pj.getTransformScreenRect();
-
-    /* Draw in backward cycle, so the items with the least index are on the front. */
+        mVisibleMarkers.clear();
+        /* Draw in backward cycle, so the items with the least index are on the front. */
         for (int i = size; i >= 0; i--) {
             final Marker item = getItem(i);
             if (item == mFocusedItem) {
                 continue;
             }
-            onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
+            if (!item.shouldDraw()) {
+                return;
+            }
+            if (shouldDrawItem(item, pj, bounds)) {
+                onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
+            }
         }
         if (mFocusedItem != null) {
-            onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
+            if (shouldDrawItem(mFocusedItem, pj, bounds)) {
+                onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
+            }
         }
     }
 
@@ -155,13 +178,8 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         if (!item.shouldDraw()) {
             return;
         }
-        item.updateDrawingPosition();
         final PointF position = item.getPositionOnMap();
         final Point roundedCoords = new Point((int) position.x, (int) position.y);
-        if (!RectF.intersects(mapBounds, item.getMapDrawingBounds(projection, null))) {
-            //dont draw item if offscreen
-            return;
-        }
 
         canvas.save();
 
@@ -200,16 +218,16 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e, MapView mapView) {
-        final int size = this.size();
+        final int size = mVisibleMarkers.size();
         final Projection projection = mapView.getProjection();
         final float x = e.getX();
         final float y = e.getY();
 
         for (int i = 0; i < size; i++) {
-            final Marker item = getItem(i);
+            final Marker item = mVisibleMarkers.get(i);
             if (markerHitTest(item, projection, x, y)) {
                 // We have a hit, do we get a response from onTap?
-                if (onTap(i)) {
+                if (onTap(item)) {
                     // We got a response so consume the event
                     return true;
                 }
@@ -228,7 +246,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
      * @return true if you handled the tap, false if you want the event that generated it to pass to
      * other overlays.
      */
-    protected boolean onTap(int index) {
+    protected boolean onTap(Marker marker) {
         return false;
     }
 
