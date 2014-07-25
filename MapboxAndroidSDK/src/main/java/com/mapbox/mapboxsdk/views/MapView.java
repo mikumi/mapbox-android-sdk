@@ -565,7 +565,9 @@ public class MapView extends FrameLayout
      */
     public void removeMarker(final Marker marker) {
         defaultMarkerList.remove(marker);
-        defaultMarkerOverlay.removeItem(marker);
+        if (defaultMarkerOverlay != null) {
+            defaultMarkerOverlay.removeItem(marker);
+        }
         this.invalidate();
     }
 
