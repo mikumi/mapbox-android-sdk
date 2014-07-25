@@ -136,18 +136,28 @@ public class InfoWindow {
 
         public void setBackgroundColor(final int color) {
             mBackgroundColor = color;
+            this.mPaint.setColor(mBackgroundColor);
             invalidate();
         }
 
         public void setArrowHeightDp(final float height) {
             final float scale = getResources().getDisplayMetrics().density;
-            mArrowHeight = (int) (height * scale);
+            setArrowHeight(height * scale);
+        }
+        
+        public void setArrowHeight(final float height) {
+            mArrowHeight = (int) (height);
             setPadding(0, 0, 0, mArrowHeight);
         }
 
+
         public void setBorderRadiusDp(final float radius) {
             final float scale = getResources().getDisplayMetrics().density;
-            mBorderRadius = (int) (radius * scale);
+            setBorderRadius(radius * scale);
+        }
+        
+        public void setBorderRadius(final float radius) {
+            mBorderRadius = (int) radius;
             requestLayout();
         }
     }
