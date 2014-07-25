@@ -76,6 +76,76 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class MapView extends FrameLayout
         implements MapViewConstants, MapEventsReceiver, MapboxConstants {
+
+    private OnCameraChangeListener mOnCameraChangeListener;
+    public void setOnCameraChangeListener (OnCameraChangeListener listener) {
+        mOnCameraChangeListener = listener;
+    }
+    public static interface OnCameraChangeListener {
+        public abstract void onCameraChange (final BoundingBox box, final float zoom);
+    }
+
+    private OnInfoWindowClickListener mOnInfoWindowClickListener;
+    public void setOnInfoWindowClickListener (OnInfoWindowClickListener listener) {
+        mOnInfoWindowClickListener = listener;
+    }
+    public static interface OnInfoWindowClickListener {
+        public abstract void onInfoWindowClick (Marker marker);
+    }
+
+    private OnInfoWindowShowListener mOnInfoWindowShowListener;
+    public void setOnInfoWindowShowListener (OnInfoWindowShowListener listener) {
+        mOnInfoWindowShowListener = listener;
+    }
+    public static interface OnInfoWindowShowListener {
+        public abstract void onInfoWindowShow (Marker marker);
+        public abstract void onInfoWindowHide (Marker marker);
+    }
+
+    private OnMapClickListener mOnMapClickListener;
+    public void setOnMapClickListener (OnMapClickListener listener) {
+        mOnMapClickListener = listener;
+    }
+    public static interface OnMapClickListener {
+        public abstract void onMapClick (ILatLng point);
+    }
+
+    private OnMapLoadedCallback mOnMapLoadedCallback;
+    public void setOnMapLoadedCallback (OnMapLoadedCallback listener) {
+        mOnMapLoadedCallback = listener;
+    }
+    public static interface OnMapLoadedCallback {
+        public abstract void onMapLoaded ();
+    }
+
+    private OnMapLongClickListener mOnMapLongClickListener;
+    public void setOnMapLongClickListener (OnMapLongClickListener listener) {
+        mOnMapLongClickListener = listener;
+    }
+    public static interface OnMapLongClickListener {
+        public abstract void onMapLongClick (ILatLng point);
+    }
+
+    private OnMarkerClickListener mOnMarkerClickListener;
+    public void setOnMarkerClickListener (OnMarkerClickListener listener) {
+        mOnMarkerClickListener = listener;
+    }
+    public static interface OnMarkerClickListener {
+        public abstract boolean onMarkerClick (Marker marker);
+    }
+
+    private OnMarkerLongClickListener mOnMarkerLongClickListener;
+    public void setOnMarkerLongClickListener (OnMarkerLongClickListener listener) {
+        mOnMarkerLongClickListener = listener;
+    }
+    public static interface OnMarkerLongClickListener {
+        public abstract boolean onMarkerLongClick (Marker marker);
+    }
+
+    private OnMyLocationChangeListener mOnMyLocationChangeListener;
+    public static interface OnMyLocationChangeListener {
+        public abstract void onMyLocationChange (Location location);
+    }
     /**
      * The default marker Overlay, automatically added to the view to add markers directly.
      */
@@ -107,11 +177,6 @@ public class MapView extends FrameLayout
     protected float mRequestedMinimumZoomLevel = 0;
     private float mMinimumZoomLevel = 0;
     private float mMaximumZoomLevel = 22;
-
-    /**
-     * The MapView listener
-     */
-    private MapViewListener mMapViewListener;
 
     private final OverlayManager mOverlayManager;
 
@@ -504,15 +569,16 @@ public class MapView extends FrameLayout
     public void selectMarker(final Marker marker) {
         InfoWindow toolTip = marker.getInfoWindow();
 
-        if (mMapViewListener != null) {
-            mMapViewListener.onTapMarker(MapView.this, marker);
+
+        if (mOnMarkerClickListener != null) {
+            mOnMarkerClickListener.onMarkerClick(marker);
         }
 
         InfoWindow oldInfoWindow = currentInfoWindow;
         closeCurrentInfoWindow();
         if (toolTip != oldInfoWindow && marker.hasContent()) {
-            if (mMapViewListener != null) {
-                mMapViewListener.onShowMarker(MapView.this, marker);
+            if (mOnInfoWindowShowListener != null) {
+                mOnInfoWindowShowListener.onInfoWindowShow(marker);
             }
             currentInfoWindow = toolTip;
             marker.showInfoWindow(currentInfoWindow, MapView.this, true);
@@ -575,8 +641,8 @@ public class MapView extends FrameLayout
      */
     public void closeCurrentInfoWindow() {
         if (currentInfoWindow != null) {
-            if (mMapViewListener != null) {
-                mMapViewListener.onHideMarker(this, currentInfoWindow.getBoundMarker());
+            if (mOnInfoWindowShowListener != null) {
+                mOnInfoWindowShowListener.onInfoWindowHide(currentInfoWindow.getBoundMarker());
             }
             currentInfoWindow.close();
             currentInfoWindow = null;
@@ -584,8 +650,8 @@ public class MapView extends FrameLayout
     }
     
     public void onInfoWindowClick(Marker marker) {
-        if (mMapViewListener != null) {
-            mMapViewListener.onInfoWindowClick(marker);
+        if (mOnInfoWindowClickListener != null) {
+            mOnInfoWindowClickListener.onInfoWindowClick(marker);
         }
     }
 
@@ -609,8 +675,8 @@ public class MapView extends FrameLayout
                     }
 
                     public boolean onItemLongPress(final int index, final Marker item) {
-                        if (mMapViewListener != null) {
-                            mMapViewListener.onLongPressMarker(MapView.this, item);
+                        if (mOnMarkerLongClickListener != null) {
+                            mOnMarkerLongClickListener.onMarkerLongClick(item);
                         }
                         return true;
                     }
@@ -639,14 +705,14 @@ public class MapView extends FrameLayout
     }
 
     public void onLongPress(final ILatLng p) {
-        if (mMapViewListener != null) {
-            mMapViewListener.onLongPressMap(MapView.this, p);
+        if (mOnMapLongClickListener != null) {
+            mOnMapLongClickListener.onMapLongClick(p);
         }
     }
 
     public void onTap(final ILatLng p) {
-        if (mMapViewListener != null) {
-            mMapViewListener.onTapMap(MapView.this, p);
+        if (mOnMapClickListener != null) {
+            mOnMapClickListener.onMapClick(p);
         }
     }
 
@@ -835,7 +901,7 @@ public class MapView extends FrameLayout
         // reset the touchScale because from now on the zoom is the new one
         mMultiTouchScale = 1.0f;
         mInvTransformMatrix.reset();
-        
+
         if (newZoomLevel != curZoomLevel) {
             this.mZoomLevel = newZoomLevel;
             // just to be sure any one got the right one
@@ -882,10 +948,17 @@ public class MapView extends FrameLayout
         }
 
         // do callback on listener
-        if (newZoomLevel != curZoomLevel && mListeners.size() > 0) {
-            final ZoomEvent event = new ZoomEvent(this, newZoomLevel, mController.currentlyInUserAction());
-            for (MapListener listener : mListeners) {
-                listener.onZoom(event);
+
+
+        if (newZoomLevel != curZoomLevel) {
+            if (mOnCameraChangeListener != null) {
+                mOnCameraChangeListener.onCameraChange(getBoundingBox(), mZoomLevel);
+            }
+            if (mListeners.size() > 0) {
+                final ZoomEvent event = new ZoomEvent(this, newZoomLevel, mController.currentlyInUserAction());
+                for (MapListener listener : mListeners) {
+                    listener.onZoom(event);
+                }
             }
         }
 
@@ -1518,13 +1591,43 @@ public class MapView extends FrameLayout
                     break;
                 case MotionEvent.ACTION_POINTER_UP:
                     multiTouchDownCount--;
-                    //                    canTapTwoFingers = multiTouchDownCount > 1;
+//                    canTapTwoFingers = multiTouchDownCount > 1;
                     break;
                 default:
             }
         }
         return false;
     }
+
+    /* Scroller detection
+    * we want to detect scroll end to trigger onCameraChange
+     */
+    private static final int SCROLL_TASK_INTERVAL = 100;
+    private int  mScrollTaskInitialPosition = 0;
+    public void startScrollerTask(){
+
+        mScrollTaskInitialPosition = getScrollY();
+        MapView.this.postDelayed(mScrollerTask, SCROLL_TASK_INTERVAL);
+    }
+
+    public void stopScrollerTask(){
+        MapView.this.removeCallbacks(mScrollerTask);
+    }
+    private Runnable  mScrollerTask = new Runnable() {
+        public void run() {
+
+            int newPosition = getScrollY();
+            if(mScrollTaskInitialPosition - newPosition == 0)
+            {//has stopped
+                if (mOnCameraChangeListener != null) {
+                    mOnCameraChangeListener.onCameraChange(getBoundingBox(), mZoomLevel);
+                }
+            }else{
+                mScrollTaskInitialPosition = getScrollY();
+                MapView.this.postDelayed(mScrollerTask, SCROLL_TASK_INTERVAL);
+            }
+        }
+    };
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -1535,6 +1638,15 @@ public class MapView extends FrameLayout
             if (this.getOverlayManager().onTouchEvent(rotatedEvent, this)) {
                 Log.d(TAG, "OverlayManager handled onTouchEvent");
                 return true;
+            }
+
+            if (event.getAction() == MotionEvent.ACTION_UP)
+            {
+                startScrollerTask();
+            }
+            else
+            {
+                stopScrollerTask();
             }
 
             // can't use the scale detector's onTouchEvent() result as it always returns true (Android issue #42591)
@@ -1550,7 +1662,6 @@ public class MapView extends FrameLayout
             canTapTwoFingers = canTapTwoFingers & !result;
             //handleTwoFingersTap should always be called because it counts pointers up/down
             result |= handleTwoFingersTap(rotatedEvent);
-
             return result;
         } finally {
             if (rotatedEvent != event) {
@@ -1597,6 +1708,9 @@ public class MapView extends FrameLayout
                 }
                 mIsFlinging = false;
             } else {
+                if (!mIsFlinging) {
+                    mIsFlinging = true;
+                }
                 scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
             }
             postInvalidate(); // Keep on drawing until the animation has
@@ -1681,6 +1795,9 @@ public class MapView extends FrameLayout
         super.scrollTo(intX, intY);
 
         // do callback on listener
+//        if (mOnCameraChangeListener != null) {
+//            mOnCameraChangeListener.onCameraChange(getBoundingBox(), mZoomLevel);
+//        }
         if (mListeners.size() > 0) {
             final ScrollEvent event = new ScrollEvent(this, intX, intY, mController.currentlyInUserAction());
             for (MapListener listener : mListeners) {
@@ -1941,10 +2058,6 @@ public class MapView extends FrameLayout
         public LayoutParams(final ViewGroup.LayoutParams source) {
             super(source);
         }
-    }
-
-    public void setMapViewListener(MapViewListener listener) {
-        this.mMapViewListener = listener;
     }
 
     public void setOnTileLoadedListener(TileLoadedListener aTileLoadedListener) {
