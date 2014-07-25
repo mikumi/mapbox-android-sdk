@@ -87,7 +87,12 @@ public class Marker {
         if (mMarker == null) {
             //if there is an icon it means it's not loaded yet
             //thus change the drawable while waiting
-            setMarker(mv.getDefaultPinDrawable());
+            if (mImage != null) {
+                setMarker(mImage);
+            }
+            else {
+                setMarker(mv.getDefaultPinDrawable());
+            }
         }
         mapView = mv;
         context = mv.getContext();
@@ -177,6 +182,7 @@ public class Marker {
 
     public void setImage(Drawable anImage) {
         mImage = anImage;
+        setMarker(mImage);
     }
 
     public void setRelatedObject(Object o) {
