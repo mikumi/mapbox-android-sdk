@@ -338,6 +338,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         mDraggedItem = item;
         if (item != null) {
             mDraggedItemOriginalPos = item.getPosition();
+            mDraggedItem.closeInfoWindow();
         }
         else {
             mDraggedItemOriginalPos = null;
