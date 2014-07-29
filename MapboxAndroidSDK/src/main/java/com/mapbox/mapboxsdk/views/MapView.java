@@ -143,7 +143,7 @@ public class MapView extends FrameLayout
     }
 
     private OnMarkerDragListener mOnMarkerDragListener;
-    public void setOnMarkerDraggedListener (OnMarkerDragListener listener) {
+    public void setOnMarkerDragListener (OnMarkerDragListener listener) {
         mOnMarkerDragListener = listener;
     }
     public static interface OnMarkerDragListener {
