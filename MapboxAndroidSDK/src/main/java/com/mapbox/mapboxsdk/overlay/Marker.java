@@ -47,7 +47,7 @@ public class Marker {
     private ItemizedOverlay mParentHolder;
 
     private boolean mAnimated = true;
-    private boolean mDraggable = true;
+    private boolean mDraggable = false;
 
     private float mMinZoom = 0;
     private float mMaxZoom = 22;
