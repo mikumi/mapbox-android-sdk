@@ -131,7 +131,7 @@ public class Projection implements GeoConstants {
      *
      * @return LatLng under x/y.
      */
-    public ILatLng fromPixels(final float x, final float y) {
+    public LatLng fromPixels(final float x, final float y) {
         final Rect screenRect = getIntrinsicScreenRect();
         return pixelXYToLatLong(screenRect.left + (int) x + worldSize2,
                 screenRect.top + (int) y + worldSize2, mZoomLevelProjection);
@@ -142,7 +142,7 @@ public class Projection implements GeoConstants {
      *
      * @return LatLng under x/y.
      */
-    public ILatLng fromPixels(final int x, final int y) {
+    public LatLng fromPixels(final int x, final int y) {
         return fromPixels((float) x, (float) y);
     }
 
