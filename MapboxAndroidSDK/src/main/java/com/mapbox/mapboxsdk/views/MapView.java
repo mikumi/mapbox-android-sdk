@@ -142,12 +142,15 @@ public class MapView extends FrameLayout
         public abstract boolean onMarkerLongClick (Marker marker);
     }
 
-    private OnMarkerDraggedListener mOnMarkerDraggedListener;
-    public void setOnMarkerDraggedListener (OnMarkerDraggedListener listener) {
-        mOnMarkerDraggedListener = listener;
+    private OnMarkerDragListener mOnMarkerDragListener;
+    public void setOnMarkerDraggedListener (OnMarkerDragListener listener) {
+        mOnMarkerDragListener = listener;
     }
-    public static interface OnMarkerDraggedListener {
-        public abstract void onMarkerDragged (Marker marker, ItemizedOverlay.DragState newState);
+    public static interface OnMarkerDragListener {
+        public abstract void onMarkerDrag (Marker marker);
+        public abstract void onMarkerDragEnd (Marker marker);
+        public abstract void onMarkerDragStart (Marker marker);
+        public abstract void onMarkerDragCancel (Marker marker);
     }
 
     private OnMyLocationChangeListener mOnMyLocationChangeListener;
@@ -733,8 +736,21 @@ public class MapView extends FrameLayout
     }
 
     public void onMarkerDragged (Marker marker, ItemizedOverlay.DragState newState) {
-        if (mOnMarkerDraggedListener != null) {
-            mOnMarkerDraggedListener.onMarkerDragged(marker, newState);
+        if (mOnMarkerDragListener != null) {
+            switch (newState) {
+                case MARKER_DRAG_STATE_STARTING:
+                    mOnMarkerDragListener.onMarkerDragStart(marker);
+                    break;
+                case MARKER_DRAG_STATE_ENDING:
+                    mOnMarkerDragListener.onMarkerDragEnd(marker);
+                    break;
+                case MARKER_DRAG_STATE_CANCELING:
+                    mOnMarkerDragListener.onMarkerDragCancel(marker);
+                    break;
+                case MARKER_DRAG_STATE_DRAGGING:
+                    mOnMarkerDragListener.onMarkerDrag(marker);
+                    break;
+            }
         }
     }
 
