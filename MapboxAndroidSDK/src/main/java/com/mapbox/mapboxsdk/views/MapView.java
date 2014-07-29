@@ -142,6 +142,14 @@ public class MapView extends FrameLayout
         public abstract boolean onMarkerLongClick (Marker marker);
     }
 
+    private OnMarkerDraggedListener mOnMarkerDraggedListener;
+    public void setOnMarkerDraggedListener (OnMarkerDraggedListener listener) {
+        mOnMarkerDraggedListener = listener;
+    }
+    public static interface OnMarkerDraggedListener {
+        public abstract void onMarkerDragged (Marker marker, ItemizedOverlay.DragState newState);
+    }
+
     private OnMyLocationChangeListener mOnMyLocationChangeListener;
     public void setOnMyLocationChangeListener (OnMyLocationChangeListener listener) {
         mOnMyLocationChangeListener = listener;
@@ -721,6 +729,12 @@ public class MapView extends FrameLayout
     public void onTap(final ILatLng p) {
         if (mOnMapClickListener != null) {
             mOnMapClickListener.onMapClick(p);
+        }
+    }
+
+    public void onMarkerDragged (Marker marker, ItemizedOverlay.DragState newState) {
+        if (mOnMarkerDraggedListener != null) {
+            mOnMarkerDraggedListener.onMarkerDragged(marker, newState);
         }
     }
 
@@ -1644,7 +1658,6 @@ public class MapView extends FrameLayout
 
         try {
             if (this.getOverlayManager().onTouchEvent(rotatedEvent, this)) {
-                Log.d(TAG, "OverlayManager handled onTouchEvent");
                 return true;
             }
 

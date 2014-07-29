@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
+import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas;
 import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas.UnsafeCanvasHandler;
@@ -29,12 +30,25 @@ import java.util.ArrayList;
  */
 public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay.Snappable {
 
+
+    public enum DragState {
+        MARKER_DRAG_STATE_NONE,
+        MARKER_DRAG_STATE_STARTING,
+        MARKER_DRAG_STATE_DRAGGING,
+        MARKER_DRAG_STATE_CANCELING,
+        MARKER_DRAG_STATE_ENDING
+    };
+
     private final ArrayList<Marker> mInternalItemList;
     protected final ArrayList<Marker> mVisibleMarkers;
     protected boolean mDrawFocusedItem = true;
     private Marker mFocusedItem;
     private boolean mPendingFocusChangedEvent = false;
     private OnFocusChangeListener mOnFocusChangeListener;
+
+    private Marker mDraggedItem = null;
+    private LatLng mDraggedItemOriginalPos = null;
+    private PointF mDraggedItemOffset = new PointF();
 
     private static SafePaint mClusterTextPaint;
 
@@ -123,7 +137,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         /* Draw in backward cycle, so the items with the least index are on the front. */
         for (int i = size; i >= 0; i--) {
             final Marker item = getItem(i);
-            if (item == mFocusedItem) {
+            if (item == mFocusedItem || item == mDraggedItem) {
                 continue;
             }
             if (!item.shouldDraw()) {
@@ -137,6 +151,11 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
             if (shouldDrawItem(mFocusedItem, pj, bounds)) {
                 onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
             }
+        }
+        if (mDraggedItem != null) {
+//            if (shouldDrawItem(mDraggedItem, pj, bounds)) {
+                onDrawItem(canvas, mDraggedItem, pj, mapView.getMapOrientation(), bounds, mapScale*1.5f);
+//            }
         }
     }
 
@@ -236,6 +255,44 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
 
         return super.onSingleTapConfirmed(e, mapView);
     }
+    @Override
+    public boolean onTouchEvent(MotionEvent event, MapView mapView) {
+
+        final int action = event.getAction();
+        final float x = event.getX();
+        final float y = event.getY();
+
+        final Projection pj = mapView.getProjection();
+
+        boolean result = false;
+        if (mDraggedItem != null) {
+            if (action == MotionEvent.ACTION_MOVE) {
+                LatLng newPos = pj.fromPixels(x + mDraggedItemOffset.x, y + mDraggedItemOffset.y);
+                mDraggedItem.setPoint(newPos);
+                mapView.onMarkerDragged(mDraggedItem, DragState.MARKER_DRAG_STATE_DRAGGING);
+                result = true;
+            }
+
+            else if (action == MotionEvent.ACTION_UP) {
+                LatLng newPos = pj.fromPixels(x + mDraggedItemOffset.x, y + mDraggedItemOffset.y);
+                mDraggedItem.setPoint(newPos);
+                mapView.onMarkerDragged(mDraggedItem, DragState.MARKER_DRAG_STATE_ENDING);
+                setDragging(null, null);
+                result = true;
+            }
+            else if (action == MotionEvent.ACTION_CANCEL) {
+                mDraggedItem.setPoint(mDraggedItemOriginalPos);
+                mapView.onMarkerDragged(mDraggedItem, DragState.MARKER_DRAG_STATE_CANCELING);
+                setDragging(null, null);
+                result = true;
+            }
+        }
+
+        if (result) {
+            mapView.invalidate();
+        }
+        return (result || super.onTouchEvent(event, mapView));
+    }
 
     /**
      * Override this method to handle a "tap" on an item. This could be from a touchscreen tap on
@@ -276,6 +333,29 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
     public Marker getFocus() {
         return mFocusedItem;
     }
+
+    public void setDragging(final Marker item, final PointF offset) {
+        mDraggedItem = item;
+        if (item != null) {
+            mDraggedItemOriginalPos = item.getPosition();
+        }
+        else {
+            mDraggedItemOriginalPos = null;
+        }
+        if (offset != null) {
+            mDraggedItemOffset.set(offset);
+        }
+        else {
+            mDraggedItemOffset.set(0,0);
+        }
+    }
+    /**
+     * @return the currently-dragged item, or null if no item is currently dragging.
+     */
+    public Marker getDragging() {
+        return mDraggedItem;
+    }
+
 
     /**
      * an item want's to be blured, if it is the focused one, blur it

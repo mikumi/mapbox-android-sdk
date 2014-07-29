@@ -2,6 +2,7 @@ package com.mapbox.mapboxsdk.overlay;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.WindowManager;
@@ -24,7 +25,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
 
     public ItemizedIconOverlay(final Context pContext, final List<Marker> pList,
             final com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay.OnItemGestureListener<Marker> pOnItemGestureListener) {
-        this(pContext, pList, pOnItemGestureListener, false);
+        this(pContext, pList, pOnItemGestureListener, true);
     }
 
     public ItemizedIconOverlay(final Context pContext, final List<Marker> pList,
@@ -32,6 +33,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         super();
         this.context = pContext;
         this.mItemList = pList;
+        this.mSortByLatitude = sortList;
         this.mOnItemGestureListener = pOnItemGestureListener;
         populate();
     }
@@ -189,6 +191,16 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
             @Override
             public boolean run(final Marker marker) {
                 final ItemizedIconOverlay that = ItemizedIconOverlay.this;
+                if (marker.isDraggable()) {
+                    final float x = event.getX();
+                    final float y = event.getY();
+                    final PointF point = mapView.getProjection().toPixels(marker.getPosition(), null);
+                    point.offset(-x,-y);
+                    that.setDragging(marker, point);
+                    mapView.onMarkerDragged(marker, DragState.MARKER_DRAG_STATE_STARTING);
+                    mapView.invalidate();
+                    return true;
+                }
                 if (that.mOnItemGestureListener == null) {
                     return false;
                 }
