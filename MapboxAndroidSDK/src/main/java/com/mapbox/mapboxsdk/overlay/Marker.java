@@ -537,4 +537,7 @@ public class Marker {
     public boolean isDraggable() {
         return !mClustered && mDraggable;
     }
+    public void setDraggable(final boolean draggable) {
+        mDraggable = draggable;
+    }
 }
