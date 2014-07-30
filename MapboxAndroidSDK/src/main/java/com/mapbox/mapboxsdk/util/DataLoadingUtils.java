@@ -3,6 +3,7 @@ package com.mapbox.mapboxsdk.util;
 import android.content.Context;
 import android.graphics.Paint;
 import android.util.Log;
+
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.cocoahero.android.geojson.GeoJSON;
@@ -12,14 +13,15 @@ import com.cocoahero.android.geojson.MultiPoint;
 import com.cocoahero.android.geojson.MultiPolygon;
 import com.cocoahero.android.geojson.Point;
 import com.cocoahero.android.geojson.Polygon;
-import com.google.common.base.Strings;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.overlay.Icon;
 import com.mapbox.mapboxsdk.overlay.Marker;
 import com.mapbox.mapboxsdk.overlay.PathOverlay;
 import com.mapbox.mapboxsdk.util.constants.UtilConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +42,7 @@ public class DataLoadingUtils {
      * @throws JSONException
      */
     public static FeatureCollection loadGeoJSONFromUrl(final String url) throws IOException, JSONException {
-        if (Strings.isNullOrEmpty(url)) {
+        if (Utils.StringNullOrEmpty(url)) {
             throw new NullPointerException("No GeoJSON URL passed in.");
         }
 
@@ -74,7 +76,7 @@ public class DataLoadingUtils {
      * @throws JSONException
      */
     public static FeatureCollection loadGeoJSONFromAssets(final Context context, final String fileName)  throws IOException, JSONException {
-        if (Strings.isNullOrEmpty(fileName)) {
+        if (Utils.StringNullOrEmpty(fileName)) {
             throw new NullPointerException("No GeoJSON File Name passed in.");
         }
 

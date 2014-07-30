@@ -37,7 +37,7 @@ public class InfoWindow {
     private boolean mIsVisible;
     private ViewGroup mInfoWindowView;
     private View mInfoView;
-    private Marker.HotspotPlace mHostpotPlace = Marker.HotspotPlace.TOP_CENTER;
+    private Marker.HotspotPlace mHostpotPlace = Marker.HotspotPlace.BOTTOM_CENTER;
     private int mLayoutAnchor = MapView.LayoutParams.BOTTOM_CENTER;
 
     public void setLayoutAnchor(int anchor) {
