@@ -250,7 +250,7 @@ public class MapView extends FrameLayout
     private Drawable mDefaultPinDrawable;
     private PointF mDefaultPinAnchor = DEFAULT_PIN_ANCHOR;
     
-    private PointF mDefaultCalloutAnchor = DEFAULT_CALLOUT_ANCHOR;
+    private PointF mDefaultInfoWindowAnchor = DEFAULT_CALLOUT_ANCHOR;
 
     private UserLocationOverlay mLocationOverlay;
 
@@ -2144,14 +2144,14 @@ public class MapView extends FrameLayout
         mDefaultPinAnchor = point;
     }
     
-    public void setDefaultCalloutAnchor(PointF point) {
-        mDefaultCalloutAnchor = point;
+    public void setDefaultInfoWindowAnchor(PointF point) {
+        mDefaultInfoWindowAnchor = point;
     }
     
     public PointF getDefaultPinAnchor() {
         return mDefaultPinAnchor;
     }
-    public PointF getDefaultCalloutAnchor() {
-        return mDefaultCalloutAnchor;
+    public PointF getDefaultInfoWindowAnchor() {
+        return mDefaultInfoWindowAnchor;
     }
 }

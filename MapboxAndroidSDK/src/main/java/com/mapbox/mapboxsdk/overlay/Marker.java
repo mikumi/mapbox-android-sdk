@@ -456,7 +456,7 @@ public class Marker {
         int markerWidth = getWidth(), markerHeight = getHeight()*2;
         PointF anchor = infoWindow.getAnchor();
         if (anchor == null) {
-            anchor = aMapView.getDefaultCalloutAnchor();
+            anchor = aMapView.getDefaultInfoWindowAnchor();
         }
         PointF tooltipH = new PointF(anchor.x * markerWidth, anchor.y * markerHeight);
         infoWindow.setMapView(aMapView);
