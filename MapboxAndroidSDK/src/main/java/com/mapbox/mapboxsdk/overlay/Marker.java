@@ -397,33 +397,43 @@ public class Marker {
         switch (place) {
             case NONE:
             case UPPER_LEFT_CORNER:
-                reuse.set(0, 0);
+                reuse.set(-0.5f, -0.5f);
                 break;
             case BOTTOM_CENTER:
-                reuse.set(0.5f, 1f);
-                break;
-            case LOWER_LEFT_CORNER:
-                reuse.set(0, 1);
-                break;
-            case LOWER_RIGHT_CORNER:
-                reuse.set(1, 1);
-                break;
-            case CENTER:
-                reuse.set(0.5f, 0.5f);
-                break;
-            case LEFT_CENTER:
                 reuse.set(0, 0.5f);
                 break;
-            case RIGHT_CENTER:
-                reuse.set(1, 0.5f);
+            case LOWER_LEFT_CORNER:
+                reuse.set(-0.5f, 0.5f);
                 break;
-            case TOP_CENTER:
+            case LOWER_RIGHT_CORNER:
+                reuse.set(0.5f, 0.5f);
+                break;
+            case CENTER:
+                reuse.set(0, 0);
+                break;
+            case LEFT_CENTER:
+                reuse.set(-0.5f, 0);
+                break;
+            case RIGHT_CENTER:
                 reuse.set(0.5f, 0);
                 break;
+            case TOP_CENTER:
+                reuse.set(0, -0.5f);
+                break;
             case UPPER_RIGHT_CORNER:
-                reuse.set(1, 0);
+                reuse.set(0.5f, -0.5f);
                 break;
         }
+        return reuse;
+    }
+
+    public PointF getMarkerHotspotScale(HotspotPlace place, PointF reuse) {
+
+        if (reuse == null) {
+            reuse = new PointF();
+        }
+        getHotspotScale(place, reuse);
+        reuse.offset(0.5f,0.5f);
         return reuse;
     }
 
@@ -432,7 +442,7 @@ public class Marker {
      * Could be a public method of HotspotPlace or OverlayItem...
      */
     public Point getHotspot(HotspotPlace place, int w, int h) {
-        PointF scale = getHotspotScale(place, null);
+        PointF scale = getMarkerHotspotScale(place, null);
         return new Point((int) (-w * scale.x), (int) (-h * scale.y));
     }
 
@@ -443,11 +453,11 @@ public class Marker {
      * and centers the map view on the item if panIntoView is true. <br>
      */
     public void showInfoWindow(InfoWindow infoWindow, MapView aMapView, boolean panIntoView) {
-        Point markerH = getAnchor();
-        Point tooltipH = getAnchor(infoWindow.getHotspot());
-        markerH.offset(-tooltipH.x, tooltipH.y);
+        int markerWidth = getWidth(), markerHeight = getHeight()*2;
+        PointF scale = getHotspotScale(infoWindow.getHotspot(), null);
+        PointF tooltipH = new PointF(scale.x * markerWidth, scale.y * markerHeight);
         infoWindow.setMapView(aMapView);
-        infoWindow.open(this, this.getPoint(), markerH.x, markerH.y);
+        infoWindow.open(this, this.getPoint(), (int) tooltipH.x, (int) tooltipH.y);
         if (panIntoView) {
             aMapView.getController().animateTo(getPoint());
         }
