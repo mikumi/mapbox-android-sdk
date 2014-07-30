@@ -454,8 +454,11 @@ public class Marker {
      */
     public void showInfoWindow(InfoWindow infoWindow, MapView aMapView, boolean panIntoView) {
         int markerWidth = getWidth(), markerHeight = getHeight()*2;
-        PointF scale = getHotspotScale(infoWindow.getHotspot(), null);
-        PointF tooltipH = new PointF(scale.x * markerWidth, scale.y * markerHeight);
+        PointF anchor = infoWindow.getAnchor();
+        if (anchor == null) {
+            anchor = aMapView.getDefaultCalloutAnchor();
+        }
+        PointF tooltipH = new PointF(anchor.x * markerWidth, anchor.y * markerHeight);
         infoWindow.setMapView(aMapView);
         infoWindow.open(this, this.getPoint(), (int) tooltipH.x, (int) tooltipH.y);
         if (panIntoView) {

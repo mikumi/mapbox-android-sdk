@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -20,6 +22,7 @@ import android.widget.TextView;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.overlay.Marker;
+import com.mapbox.mapboxsdk.overlay.Marker.HotspotPlace;
 import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.AnimatorListenerAdapter;
 import com.nineoldandroids.animation.ObjectAnimator;
@@ -39,17 +42,56 @@ public class InfoWindow {
     private View mInfoView;
     private Marker.HotspotPlace mHostpotPlace = Marker.HotspotPlace.TOP_CENTER;
     private int mLayoutAnchor = MapView.LayoutParams.BOTTOM_CENTER;
+    protected PointF mAnchor = null;
 
     public void setLayoutAnchor(int anchor) {
         mLayoutAnchor = anchor;
     }
-    public Marker.HotspotPlace getHotspot() {
-        return mHostpotPlace;
+    
+    public PointF getAnchor() {
+        return mAnchor;
     }
 
-    public void setHotspot(Marker.HotspotPlace hotSpot) {
-        mHostpotPlace = hotSpot;
+    public void setAnchor(final PointF anchor) {
+        this.mAnchor = anchor;
     }
+    
+    public void setHotspot(Marker.HotspotPlace place) {
+        if (place == null) {
+            place = HotspotPlace.BOTTOM_CENTER; //use same default than in osmdroid.
+        }
+        switch (place) {
+            case NONE:
+            case UPPER_LEFT_CORNER:
+                mAnchor.set(-0.5f, -0.5f);
+                break;
+            case BOTTOM_CENTER:
+                mAnchor.set(0, 0.5f);
+                break;
+            case LOWER_LEFT_CORNER:
+                mAnchor.set(-0.5f, 0.5f);
+                break;
+            case LOWER_RIGHT_CORNER:
+                mAnchor.set(0.5f, 0.5f);
+                break;
+            case CENTER:
+                mAnchor.set(0, 0);
+                break;
+            case LEFT_CENTER:
+                mAnchor.set(-0.5f, 0);
+                break;
+            case RIGHT_CENTER:
+                mAnchor.set(0.5f, 0);
+                break;
+            case TOP_CENTER:
+                mAnchor.set(0, -0.5f);
+                break;
+            case UPPER_RIGHT_CORNER:
+                mAnchor.set(0.5f, -0.5f);
+                break;
+        }
+    }
+
 
     public class InfoWindowContainerView extends RelativeLayout {
         private int mBackgroundColor = Color.WHITE;

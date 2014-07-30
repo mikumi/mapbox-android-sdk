@@ -249,6 +249,8 @@ public class MapView extends FrameLayout
     private int mDefaultPinRes = R.drawable.defpin;
     private Drawable mDefaultPinDrawable;
     private PointF mDefaultPinAnchor = DEFAULT_PIN_ANCHOR;
+    
+    private PointF mDefaultCalloutAnchor = DEFAULT_CALLOUT_ANCHOR;
 
     private UserLocationOverlay mLocationOverlay;
 
@@ -2141,8 +2143,15 @@ public class MapView extends FrameLayout
     public void setDefaultPinAnchor(PointF point) {
         mDefaultPinAnchor = point;
     }
-
+    
+    public void setDefaultCalloutAnchor(PointF point) {
+        mDefaultCalloutAnchor = point;
+    }
+    
     public PointF getDefaultPinAnchor() {
         return mDefaultPinAnchor;
+    }
+    public PointF getDefaultCalloutAnchor() {
+        return mDefaultCalloutAnchor;
     }
 }
