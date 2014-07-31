@@ -701,8 +701,9 @@ public class MapView extends FrameLayout
                     public boolean onItemLongPress(final int index, final Marker item) {
                         if (mOnMarkerLongClickListener != null) {
                             mOnMarkerLongClickListener.onMarkerLongClick(item);
+                            return true;
                         }
-                        return true;
+                        return false;
                     }
                 }
         );
