@@ -393,10 +393,15 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
             }
         });
     }
+    
+    private boolean areLocationsEqual(final Location loc1, final Location loc2) {
+        return (loc1 == loc2 || (loc1 != null && loc2 != null &&
+                loc1.getBearing() == loc2.getBearing() && loc1.distanceTo(loc2) == 0));
+    }
 
     public void onLocationChanged(Location location, GpsLocationProvider source) {
         // If we had a previous location, let's get those bounds
-        if (mLocation != null && mLocation.getBearing() == location.getBearing() && mLocation.distanceTo(location) == 0) {
+        if (areLocationsEqual(mLocation, location)) {
             return;
         }
 
@@ -423,7 +428,7 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
         float currentZoom = mMapView.getZoomLevel(false);
         if (currentZoom <= mRequiredZoomLevel) {
             double requiredZoom = mRequiredZoomLevel;
-            if (mZoomBasedOnAccuracy && mMapView.isLayedOut()) {
+            if (mZoomBasedOnAccuracy) {
                 double delta = (mLocation.getAccuracy() / 110000) * 1.2; // approx. meter per degree latitude, plus some margin
                 final Projection projection = mMapView.getProjection();
                 LatLng desiredSouthWest = new LatLng(mLocation.getLatitude() - delta,
@@ -431,8 +436,6 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
 
                 LatLng desiredNorthEast = new LatLng(mLocation.getLatitude() + delta,
                         mLocation.getLongitude() + delta);
-
-                float pixelRadius = Math.min(mMapView.getMeasuredWidth(), mMapView.getMeasuredHeight()) / 2;
 
                 BoundingBox currentBox = projection.getBoundingBox();
                 if (desiredNorthEast.getLatitude() != currentBox.getLatNorth() ||
@@ -459,21 +462,35 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
         mOnMyLocationChangeListener = listener;
     }
 
-    private void updateMyLocation(final Location location) {
-        mLocation = location;
-        if (mOnMyLocationChangeListener != null) {
-            mOnMyLocationChangeListener.onMyLocationChange(mLocation);
+    public void updateMyLocation(final Location location, final boolean animated) {
+        if (!areLocationsEqual(mLocation, location)) {
+            mLocation = location;
+            if (mOnMyLocationChangeListener != null) {
+                mOnMyLocationChangeListener.onMyLocationChange(mLocation);
+            }
+            if (mLocation == null) {
+                mLatLng = null;
+            }
+            else {
+                mLatLng = new LatLng(mLocation);
+            }
         }
-        if (mLocation == null) {
-            mLatLng = null;
+        if (!mMapView.isLayedOut()) {
+            //will be done in map view first layout
             return;
         }
-        mLatLng = new LatLng(mLocation);
         //if goToMyPosition return false, it means we are already there
         //which means we have to invalidate ourselves to make sure we are redrawn
-        if (!isFollowLocationEnabled() || !goToMyPosition(true)) {
+        if (!isFollowLocationEnabled() || !goToMyPosition(animated)) {
             invalidate();
         }
+    }
+    public void updateMyLocation(final Location location) {
+        updateMyLocation(location, true);
+    }
+    
+    public void updateMyLocation(final boolean animated) {
+        updateMyLocation(mLocation, animated);
     }
 
     /**

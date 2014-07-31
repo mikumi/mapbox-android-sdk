@@ -1564,14 +1564,18 @@ public class MapView extends FrameLayout
                 //first layout: if some actions were triggered before, they were enqueued
                 //let's trigger them again!
                 mController.mapViewLayedOut();
+                if (mBoundingBoxToZoomOn != null) {
+                    zoomToBoundingBox(mBoundingBoxToZoomOn, mBoundingBoxToZoomOnRegionFit);
+                    mBoundingBoxToZoomOn = null;
+                }
+                if (mLocationOverlay != null) {
+                    mLocationOverlay.updateMyLocation(false);
+                }
             }
             updateScrollableAreaLimit();
             updateMinZoomLevel();
 
-            if (mBoundingBoxToZoomOn != null) {
-                zoomToBoundingBox(mBoundingBoxToZoomOn, mBoundingBoxToZoomOnRegionFit);
-                mBoundingBoxToZoomOn = null;
-            }
+            
         }
     }
 
