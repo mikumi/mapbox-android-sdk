@@ -303,6 +303,20 @@ public class Projection implements GeoConstants {
         result.set(Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1));
         return result;
     }
+    public RectF fromPixelsToProjected(final RectF in) {
+        final RectF result = new RectF();
+
+        final float zoomDifference = TileLayerConstants.MAXIMUM_ZOOMLEVEL - getZoomLevel();
+
+        final float x0 = GeometryMath.leftShift(in.left - offsetX, zoomDifference);
+        final float x1 = GeometryMath.leftShift(in.right - offsetX, zoomDifference);
+        final float y0 = GeometryMath.leftShift(in.bottom - offsetY, zoomDifference);
+        final float y1 = GeometryMath.leftShift(in.top - offsetY, zoomDifference);
+
+        result.set(Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1));
+        return result;
+    }
+
 
     public static void setTileSize(final int tileSize) {
         mTileSize = tileSize;

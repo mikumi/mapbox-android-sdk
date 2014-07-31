@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.views.MapView;
@@ -46,7 +47,7 @@ public class PathOverlay extends Overlay {
     private final PointF mTempPoint2 = new PointF();
 
     // bounding rectangle for the current line segment.
-    private final Rect mLineBounds = new Rect();
+    private final RectF mLineBounds = new RectF();
 
     public PathOverlay() {
         super();
@@ -141,7 +142,8 @@ public class PathOverlay extends Overlay {
             PointF projectedPoint1;
 
             // clipping rectangle in the intermediate projection, to avoid performing projection.
-            final Rect clipBounds = pj.fromPixelsToProjected(pj.getScreenRect());
+//            final Rect clipBounds = pj.fromPixelsToProjected(pj.getScreenRect());
+            final RectF clipBounds = pj.fromPixelsToProjected(pj.getTransformScreenRect());
 
             mPath.rewind();
             needsDrawing = !mOptimizePath;
@@ -156,7 +158,7 @@ public class PathOverlay extends Overlay {
                 //mLineBounds needs to be computed
                 mLineBounds.union((int) projectedPoint1.x, (int) projectedPoint1.y);
 
-                if (mOptimizePath && !Rect.intersects(clipBounds, mLineBounds)) {
+                if (mOptimizePath && !RectF.intersects(clipBounds, mLineBounds)) {
                     // skip this line, move to next point
                     projectedPoint0 = projectedPoint1;
                     mLineBounds.set((int) projectedPoint0.x, (int) projectedPoint0.y, (int) projectedPoint0.x,
@@ -195,7 +197,7 @@ public class PathOverlay extends Overlay {
                 }
             }
             if (!mOptimizePath) {
-                needsDrawing = Rect.intersects(clipBounds, mLineBounds);
+                needsDrawing = RectF.intersects(clipBounds, mLineBounds);
             }
         }
 
