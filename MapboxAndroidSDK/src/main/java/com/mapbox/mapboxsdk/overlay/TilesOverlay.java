@@ -158,11 +158,15 @@ public class TilesOverlay extends SafeDrawOverlay {
      * @param viewPort
      */
     public void drawLoadingTile(final Canvas c, final MapView mapView, final float zoomLevel, final Rect viewPort) {
-        ISafeCanvas canvas = (ISafeCanvas) c;
-        canvas.save();
-        canvas.translate(-mapView.getScrollX(), -mapView.getScrollY());
-        canvas.drawPaint(getLoadingTilePaint());
-        canvas.restore();
+        Paint paint = getLoadingTilePaint();
+        if (paint != null) {
+            ISafeCanvas canvas = (ISafeCanvas) c;
+            canvas.save();
+            canvas.translate(-mapView.getScrollX(), -mapView.getScrollY());
+            canvas.drawPaint(getLoadingTilePaint());
+            canvas.restore();
+        }
+
     }
 
     /**
