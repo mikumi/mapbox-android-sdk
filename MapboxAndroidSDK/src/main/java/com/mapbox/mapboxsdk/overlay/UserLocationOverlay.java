@@ -426,7 +426,7 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
             return false;
         }
         float currentZoom = mMapView.getZoomLevel(false);
-        if (currentZoom <= mRequiredZoomLevel) {
+        if (isFollowLocationEnabled() && currentZoom <= mRequiredZoomLevel) {
             double requiredZoom = mRequiredZoomLevel;
             if (mZoomBasedOnAccuracy) {
                 double delta = (mLocation.getAccuracy() / 110000) * 1.2; // approx. meter per degree latitude, plus some margin
