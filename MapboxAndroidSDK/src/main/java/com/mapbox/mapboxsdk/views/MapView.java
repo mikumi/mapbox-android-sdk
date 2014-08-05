@@ -213,8 +213,8 @@ public class MapView extends FrameLayout
     protected final Scroller mScroller;
     protected boolean mIsFlinging;
 
-    protected final AtomicInteger mTargetZoomLevel = new AtomicInteger();
-    protected final AtomicBoolean mIsAnimating = new AtomicBoolean(false);
+    private final AtomicInteger mTargetZoomLevel = new AtomicInteger();
+    private final AtomicBoolean mIsAnimating = new AtomicBoolean(false);
 
     private final MapController mController;
 
@@ -949,7 +949,7 @@ public class MapView extends FrameLayout
         if (newZoomLevel != curZoomLevel) {
             this.mZoomLevel = newZoomLevel;
             // just to be sure any one got the right one
-            mTargetZoomLevel.set(Float.floatToIntBits(this.mZoomLevel));
+            setAnimatedZoom(this.mZoomLevel);
             mScroller.forceFinished(true);
             mIsFlinging = false;
             updateScrollableAreaLimit();
@@ -1152,8 +1152,19 @@ public class MapView extends FrameLayout
         return getZoomLevel(true);
     }
 
-    private float getAnimatedZoom() {
+    protected float getAnimatedZoom() {
         return Float.intBitsToFloat(mTargetZoomLevel.get());
+    }
+    protected void setAnimatedZoom(float value) {
+        mTargetZoomLevel.set(Float.floatToIntBits(value));
+    }
+
+    protected void clearAnimatedZoom(float value) {
+        Float.floatToIntBits(-1);
+    }
+
+    protected boolean isAnimatedZoomSet() {
+        return  Float.intBitsToFloat(mTargetZoomLevel.get()) != -1;
     }
 
     /**
@@ -2029,6 +2040,10 @@ public class MapView extends FrameLayout
      */
     public boolean isAnimating() {
         return mIsAnimating.get();
+    }
+
+    protected void setIsAnimating(final boolean value) {
+        mIsAnimating.set(value);
     }
 
     public TileLoadedListener getTileLoadedListener() {
