@@ -237,6 +237,10 @@ public class MapController implements MapViewConstants {
                 propertiesList.add(PropertyValuesHolder.ofFloat("scale", 1.0f, factor));
             }
         }
+        else {
+            //this is to make sure we don't change the zoom incorrectly at the end of the animation
+            mMapView.setAnimatedZoom(currentZoom);
+        }
         if (zoomAndMove) {
             PointEvaluator evaluator = new PointEvaluator();
             propertiesList.add(PropertyValuesHolder.ofObject(
