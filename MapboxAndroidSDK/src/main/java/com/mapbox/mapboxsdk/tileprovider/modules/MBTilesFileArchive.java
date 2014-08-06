@@ -139,8 +139,8 @@ public class MBTilesFileArchive implements IArchiveFile {
         String result = getStringValue("center");
         if (result != null) {
             String[] centerArray = result.split(",\\s*");
-            return new LatLng(Double.parseDouble(centerArray[0]),
-                    Double.parseDouble(centerArray[1]), Double.parseDouble(centerArray[2]));
+            return new LatLng(Double.parseDouble(centerArray[1]),
+                    Double.parseDouble(centerArray[0]), Double.parseDouble(centerArray[2]));
         }
         return null;
     }
