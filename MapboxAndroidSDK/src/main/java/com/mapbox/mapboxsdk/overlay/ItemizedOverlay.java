@@ -147,7 +147,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
                 onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
             }
         }
-        if (mFocusedItem != null) {
+        if (mFocusedItem != null && mFocusedItem != mDraggedItem) {
             if (shouldDrawItem(mFocusedItem, pj, bounds)) {
                 onDrawItem(canvas, mFocusedItem, pj, mapView.getMapOrientation(), bounds, mapScale);
             }
