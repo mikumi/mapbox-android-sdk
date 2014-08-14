@@ -376,7 +376,7 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
     }
 
     private void invalidate() {
-        if (mMapView == null) {
+        if (mMapView == null || mLatLng == null || mMapCoords == null) {
             return; //not on map yet
         }
         // Get new drawing bounds
