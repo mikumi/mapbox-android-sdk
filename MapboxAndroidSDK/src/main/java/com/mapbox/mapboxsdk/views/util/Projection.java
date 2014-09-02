@@ -197,6 +197,9 @@ public class Projection implements GeoConstants {
      * @return the Point containing the <I>Map coordinates</I> of the LatLng passed.
      */
     public PointF toMapPixels(final ILatLng in, final PointF reuse) {
+        if (in == null) {
+            return reuse;
+        }
         return toMapPixels(in.getLatitude(), in.getLongitude(), reuse);
     }
 

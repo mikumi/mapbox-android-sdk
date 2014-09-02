@@ -258,13 +258,16 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
     }
 
     protected RectF getMyLocationMapDrawingBounds(MapView mv, Location lastFix, RectF reuse) {
+        if (mv == null || mLatLng == null || mMapCoords == null) {
+            return reuse; //not on map yet
+        }
         mv.getProjection().toMapPixels(mLatLng, mMapCoords);
         reuse = getDrawingBounds(mMapCoords, lastFix, reuse);
         // Add in the accuracy circle if enabled
         if (mDrawAccuracyEnabled) {
             final float radius = (float) Math.ceil(
                     lastFix.getAccuracy() / (float) Projection.groundResolution(
-                            lastFix.getLatitude(), mMapView.getZoomLevel())
+                            lastFix.getLatitude(), mv.getZoomLevel())
             );
             RectF accuracyRect =
                     new RectF(mMapCoords.x - radius, mMapCoords.y - radius, mMapCoords.x + radius,
