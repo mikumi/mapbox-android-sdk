@@ -444,9 +444,11 @@ public class TilesOverlay extends SafeDrawOverlay {
                     if (bitmap == null) {
                         bitmap = Bitmap.createBitmap(pTileSizePx, pTileSizePx, Bitmap.Config.ARGB_8888);
                     }
-                    final Canvas canvas = new Canvas(bitmap);
-                    canvas.drawBitmap(oldBitmap, mSrcRect, mDestRect, null);
-                    mNewTiles.put(pTile, bitmap);
+                    if (bitmap != null) {
+                        final Canvas canvas = new Canvas(bitmap);
+                        canvas.drawBitmap(oldBitmap, mSrcRect, mDestRect, null);
+                        mNewTiles.put(pTile, bitmap);
+                    }
                 }
             }
         }
