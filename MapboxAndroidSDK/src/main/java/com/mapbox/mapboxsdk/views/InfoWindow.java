@@ -99,6 +99,7 @@ public class InfoWindow {
         private Path mPath = new Path();
         private int mArrowHeight;
         private int mBorderRadius;
+        private boolean needsClipPath = false;
 
         public InfoWindowContainerView(Context context) {
             super(context);
@@ -162,21 +163,29 @@ public class InfoWindow {
 
             mPath.rewind();
             if (mBorderRadius == 0) {
+                needsClipPath = false;
                 mPath.addRect(0, 0, w, height, Path.Direction.CW);
             }
             else {
+                needsClipPath = true;
                 mPath.addRoundRect(new RectF(0, 0, w, height), mBorderRadius, mBorderRadius, Path.Direction.CW);
             }
-            mPath.moveTo(w_2 - mArrowHeight, height);
-            mPath.lineTo(w_2, h);
-            mPath.lineTo(w_2 + mArrowHeight, height);
-            mPath.lineTo(w_2 - mArrowHeight, height);
+            if (mArrowHeight > 0) {
+                mPath.moveTo(w_2 - mArrowHeight, height);
+                mPath.lineTo(w_2, h);
+                mPath.lineTo(w_2 + mArrowHeight, height);
+                mPath.lineTo(w_2 - mArrowHeight, height);
+            }
+            
             invalidate();
         }
 
         @Override
         protected void dispatchDraw (Canvas c) {
             c.drawPath(mPath, this.mPaint);
+            if (needsClipPath) {
+                c.clipPath(mPath);
+            }
             super.dispatchDraw(c);
         }
 
