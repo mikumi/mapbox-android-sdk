@@ -30,6 +30,7 @@ public class Marker {
     protected Context context;
     private MapView mapView;
     private Icon icon;
+    private Comparable mSortkey = null;
 
     protected String mUid;
     protected LatLng mLatLng;
@@ -233,6 +234,17 @@ public class Marker {
 
     public void setParentHolder(ItemizedOverlay o) {
         mParentHolder = o;
+    }
+
+
+    @SuppressWarnings("rawtypes")
+    public void setSortkey(Comparable value) {
+        mSortkey = value;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Comparable getSortkey() {
+        return mSortkey;
     }
 
     public Drawable getMarker(final int stateBitset) {

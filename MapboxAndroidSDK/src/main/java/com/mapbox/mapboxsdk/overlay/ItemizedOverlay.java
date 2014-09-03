@@ -134,8 +134,8 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         final float mapScale = 1 / mapView.getScale();
         final RectF bounds = pj.getTransformScreenRect();
         mVisibleMarkers.clear();
-        /* Draw in backward cycle, so the items with the least index are on the front. */
-        for (int i = size; i >= 0; i--) {
+        /* sort order is handled in populate */
+        for (int i = 0; i <= size; i++) {
             final Marker item = getItem(i);
             if (item == mFocusedItem || item == mDraggedItem) {
                 continue;
@@ -153,9 +153,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
             }
         }
         if (mDraggedItem != null) {
-//            if (shouldDrawItem(mDraggedItem, pj, bounds)) {
-                onDrawItem(canvas, mDraggedItem, pj, mapView.getMapOrientation(), bounds, mapScale*1.5f);
-//            }
+            onDrawItem(canvas, mDraggedItem, pj, mapView.getMapOrientation(), bounds, mapScale*1.5f);
         }
     }
 
@@ -169,8 +167,8 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         final int size = size();
         mInternalItemList.clear();
         mInternalItemList.ensureCapacity(size);
-        for (int a = 0; a < size; a++) {
-            mInternalItemList.add(createItem(a));
+        for (int i = 0; i < size; i++) {
+            mInternalItemList.add(createItem(i));
         }
 
     }
@@ -237,12 +235,13 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e, MapView mapView) {
-        final int size = mVisibleMarkers.size();
+        final int size = mVisibleMarkers.size() - 1;
         final Projection projection = mapView.getProjection();
         final float x = e.getX();
         final float y = e.getY();
 
-        for (int i = 0; i < size; i++) {
+      //to respect sort order we must travel backwards
+        for (int i = size; i >= 0; i--) {
             final Marker item = mVisibleMarkers.get(i);
             if (markerHitTest(item, projection, x, y)) {
                 // We have a hit, do we get a response from onTap?

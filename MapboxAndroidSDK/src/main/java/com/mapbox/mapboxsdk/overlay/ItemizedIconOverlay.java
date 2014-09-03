@@ -6,9 +6,11 @@ import android.graphics.PointF;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.WindowManager;
+
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.views.MapView;
 import com.mapbox.mapboxsdk.views.util.Projection;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,35 +20,32 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
 
     protected final List<Marker> mItemList;
     protected OnItemGestureListener<Marker> mOnItemGestureListener;
-    private int mDrawnItemsLimit = Integer.MAX_VALUE;
     private MapView view;
     private Context context;
-    private boolean mSortByLatitude = true;
 
     public ItemizedIconOverlay(final Context pContext, final List<Marker> pList,
-            final com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay.OnItemGestureListener<Marker> pOnItemGestureListener) {
-        this(pContext, pList, pOnItemGestureListener, true);
-    }
-
-    public ItemizedIconOverlay(final Context pContext, final List<Marker> pList,
-                               final com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay.OnItemGestureListener<Marker> pOnItemGestureListener, boolean sortList) {
+                               final com.mapbox.mapboxsdk.overlay.ItemizedIconOverlay.OnItemGestureListener<Marker> pOnItemGestureListener) {
         super();
         this.context = pContext;
         this.mItemList = pList;
-        this.mSortByLatitude = sortList;
         this.mOnItemGestureListener = pOnItemGestureListener;
         populate();
     }
 
     @Override
     protected void populate() {
-        if (mSortByLatitude) {
-            Collections.sort(mItemList, new Comparator<Marker>() {
-                public int compare(Marker a, Marker b) {
-                    return Double.valueOf(a.getPoint().getLatitude()).compareTo(b.getPoint().getLatitude());
+        Collections.sort(mItemList, new Comparator<Marker>() {
+            @SuppressWarnings({ "rawtypes", "unchecked" })
+            public int compare(Marker a, Marker b) {
+                Comparable sortA = a.getSortkey();
+                Comparable sortB = b.getSortkey();
+                if (sortA != null && sortB != null) {
+                    return sortA.compareTo(sortB);
                 }
-            });
-        }
+                //least index in front
+                return mItemList.indexOf(b) - mItemList.indexOf(a);
+            }
+        });
         super.populate();
 
     }
@@ -65,7 +64,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
 
     @Override
     public int size() {
-        return Math.min(mItemList.size(), mDrawnItemsLimit);
+        return mItemList.size();
     }
 
     public boolean addItem(final Marker item) {
@@ -74,12 +73,6 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         populate();
         return result;
     }
-
-//    public void addItem(final int location, final Marker item) {
-//        item.setParentHolder(this);
-//        mItemList.add(location, item);
-//        populate();
-//    }
 
     /**
      * When a content sensitive action is performed the content item needs to be identified. This
@@ -92,13 +85,27 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
         final Projection projection = mapView.getProjection();
         final float x = event.getX();
         final float y = event.getY();
-        for (int i = 0; i < this.mVisibleMarkers.size(); ++i) {
+        final int size = this.mVisibleMarkers.size() - 1;
+        
+        boolean tappedFocused = false;
+        //to respect sort order we must travel backwards
+        for (int i = size; i >= 0; i--) {
             final Marker item = mVisibleMarkers.get(i);
+            
             if (markerHitTest(item, projection, x, y)) {
-                if (task.run(item)) {
+                if (item == getFocus()) {
+                    tappedFocused = true;
+                }
+                else if (task.run(item)) {
                     this.setFocus(item);
                     return true;
                 }
+            }
+        }
+        if (tappedFocused) {
+            if (task.run(getFocus())) {
+                this.setFocus(getFocus());
+                return true;
             }
         }
         return false;
@@ -234,14 +241,6 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
 
     private float screenY(Marker item) {
         return view.getProjection().toMapPixels(item.getPoint(), null).y;
-    }
-
-    public int getDrawnItemsLimit() {
-        return this.mDrawnItemsLimit;
-    }
-
-    public void setDrawnItemsLimit(final int aLimit) {
-        this.mDrawnItemsLimit = aLimit;
     }
 
     /**
