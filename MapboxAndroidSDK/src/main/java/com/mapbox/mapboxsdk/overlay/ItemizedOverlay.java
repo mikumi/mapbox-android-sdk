@@ -137,11 +137,8 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
         /* sort order is handled in populate */
         for (int i = 0; i <= size; i++) {
             final Marker item = getItem(i);
-            if (item == mFocusedItem || item == mDraggedItem) {
+            if (item == mFocusedItem || item == mDraggedItem || !item.shouldDraw()) {
                 continue;
-            }
-            if (!item.shouldDraw()) {
-                return;
             }
             if (shouldDrawItem(item, pj, bounds)) {
                 onDrawItem(canvas, item, pj, mapView.getMapOrientation(), bounds, mapScale);
