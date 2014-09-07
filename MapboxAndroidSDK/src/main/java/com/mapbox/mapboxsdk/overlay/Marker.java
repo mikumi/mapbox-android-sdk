@@ -503,7 +503,7 @@ public class Marker {
             return true;
         }
         float zoomDelta = (float) (Math.log(mapView.getScale()) / Math.log(2d));
-        float zoom = mapView.getZoomLevel() + zoomDelta;
+        float zoom = mapView.getZoomLevel(false) + zoomDelta;
         return zoom > mMinZoom && zoom < mMaxZoom;
     }
 
