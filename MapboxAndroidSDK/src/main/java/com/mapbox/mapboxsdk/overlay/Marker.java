@@ -127,6 +127,10 @@ public class Marker {
         }
         return mInfoWindow;
     }
+    
+    public void setInfoWindow(InfoWindow infoWindow) {
+        mInfoWindow = infoWindow;
+    }
 
     public void closeInfoWindow() {
         if (mInfoWindow != null && mInfoWindow.equals(mInfoWindow.getMapView().getCurrentInfoWindow())) {
