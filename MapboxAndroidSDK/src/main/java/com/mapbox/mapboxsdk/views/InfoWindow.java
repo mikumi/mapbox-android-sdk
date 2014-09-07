@@ -146,6 +146,7 @@ public class InfoWindow {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     ((ViewGroup) getParent()).removeView(InfoWindowContainerView.this);
+                    didClose();
                     super.onAnimationEnd(animation);
                 }
             });
@@ -348,10 +349,9 @@ public class InfoWindow {
             }
             else {
                 ((ViewGroup) mInfoWindowView.getParent()).removeView(mInfoWindowView);
+                didClose();
             }
             this.boundMarker.blur();
-            setBoundMarker(null);
-            onClose();
         }
         return this;
     }
@@ -394,7 +394,8 @@ public class InfoWindow {
         }
     }
 
-    public void onClose() {
+    public void didClose() {
+        setBoundMarker(null);
         //by default, do nothing
     }
 
