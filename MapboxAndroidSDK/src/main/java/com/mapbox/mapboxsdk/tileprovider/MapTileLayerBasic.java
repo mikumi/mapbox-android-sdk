@@ -37,28 +37,7 @@ public class MapTileLayerBasic extends MapTileLayerArray implements IMapTileProv
     }
 
     @Override
-    public void setTileSource(final ITileLayer aTileSource) {
-        super.setTileSource(aTileSource);
-        addTileSource(aTileSource);
-    }
-
-    public void setTileSources(final ITileLayer[] aTileSources) {
-        super.setTileSource(null);
-        synchronized (mTileProviderList) {
-            mTileProviderList.clear();
-        }
-        for (ITileLayer source : aTileSources) {
-            addTileSource(source);
-        }
-    }
-    public void addTileSource(final ITileLayer pTileSource) {
-        addTileSource(pTileSource, mTileProviderList.size());
-    }
-
-    public void addTileSource(final ITileLayer pTileSource, final int index) {
-        if (pTileSource == null) {
-            return;
-        }
+    protected void handleAddTileSource(final ITileLayer pTileSource, final int index) {
         final MapTileDownloader downloaderProvider =
                 new MapTileDownloader(pTileSource, mTileCache, mNetworkAvailabilityCheck, mMapView);
         if (hasNoSource()) {
@@ -72,22 +51,5 @@ public class MapTileLayerBasic extends MapTileLayerArray implements IMapTileProv
         }
     }
 
-    public void removeTileSource(final int index) {
-        synchronized (mTileProviderList) {
-            if (index >= 0 & index < mTileProviderList.size()) {
-                mTileProviderList.remove(index);
-            }
-        }
-    }
 
-    public void removeTileSource(final ITileLayer pTileSource) {
-        synchronized (mTileProviderList) {
-            for (MapTileModuleLayerBase provider : mTileProviderList) {
-                if (provider.getTileSource() == pTileSource) {
-                    mTileProviderList.remove(provider);
-                    return;
-                }
-            }
-        }
-    }
 }

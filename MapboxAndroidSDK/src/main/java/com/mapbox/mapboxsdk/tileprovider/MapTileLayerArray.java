@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.tileprovider.modules.MapTileDownloader;
 import com.mapbox.mapboxsdk.tileprovider.modules.MapTileModuleLayerBase;
 import com.mapbox.mapboxsdk.tileprovider.modules.NetworkAvailabilityCheck;
 import com.mapbox.mapboxsdk.tileprovider.tilesource.ITileLayer;
@@ -166,6 +167,7 @@ public class MapTileLayerArray extends MapTileLayerBase {
         synchronized (mWorking) {
             mWorking.remove(aState.getMapTile());
         }
+        mUnaccessibleTiles.remove(aState.getMapTile()); //make sure it's removed
         super.mapTileRequestCompleted(aState, aDrawable);
     }
 
@@ -265,9 +267,54 @@ public class MapTileLayerArray extends MapTileLayerBase {
     @Override
     public void setTileSource(final ITileLayer aTileSource) {
         super.setTileSource(aTileSource);
-        mUnaccessibleTiles.clear();
         synchronized (mTileProviderList) {
             mTileProviderList.clear();
+        }
+        addTileSource(aTileSource);
+    }
+
+    public void setTileSources(final ITileLayer[] aTileSources) {
+        super.setTileSource(null);
+        synchronized (mTileProviderList) {
+            mTileProviderList.clear();
+        }
+        for (ITileLayer source : aTileSources) {
+            addTileSource(source);
+        }
+    }
+    public void addTileSource(final ITileLayer pTileSource) {
+        addTileSource(pTileSource, mTileProviderList.size());
+    }
+
+    protected void handleAddTileSource(final ITileLayer pTileSource, final int index) {
+        //to be overriden
+    }
+
+    public void addTileSource(final ITileLayer pTileSource, final int index) {
+        if (pTileSource == null) {
+            return;
+        }
+        mUnaccessibleTiles.clear(); //nothing is unaccessible anymore!
+
+        handleAddTileSource(pTileSource, index);
+    }
+
+    public void removeTileSource(final int index) {
+        synchronized (mTileProviderList) {
+            if (index >= 0 & index < mTileProviderList.size()) {
+                mTileProviderList.remove(index);
+            }
+        }
+    }
+
+    public void removeTileSource(final ITileLayer pTileSource) {
+        synchronized (mTileProviderList) {
+            for (MapTileModuleLayerBase provider : mTileProviderList) {
+                if (provider.getTileSource() == pTileSource) {
+                    mTileProviderList.remove(provider);
+                    return;
+                }
+            }
         }
     }
 
