@@ -5,12 +5,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -23,6 +21,7 @@ import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.overlay.Marker;
 import com.mapbox.mapboxsdk.overlay.Marker.HotspotPlace;
+import com.mapbox.mapboxsdk.views.util.ViewUtils;
 import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.AnimatorListenerAdapter;
 import com.nineoldandroids.animation.ObjectAnimator;
@@ -164,11 +163,9 @@ public class InfoWindow {
 
             mPath.rewind();
             if (mBorderRadius == 0) {
-                needsClipPath = false;
                 mPath.addRect(0, 0, w, height, Path.Direction.CW);
             }
             else {
-                needsClipPath = true;
                 mPath.addRoundRect(new RectF(0, 0, w, height), mBorderRadius, mBorderRadius, Path.Direction.CW);
             }
             if (mArrowHeight > 0) {
@@ -213,8 +210,17 @@ public class InfoWindow {
         }
         
         public void setBorderRadius(final float radius) {
-            mBorderRadius = (int) radius;
-            requestLayout();
+            if (radius != mBorderRadius) {
+                mBorderRadius = (int) radius;
+                needsClipPath = mBorderRadius != 0;
+                if (needsClipPath) {
+                    ViewUtils.disableHWAcceleration(this);
+                }
+                else {
+                    ViewUtils.enableHWAcceleration(this);
+                }
+                requestLayout();
+            }
         }
     }
 
