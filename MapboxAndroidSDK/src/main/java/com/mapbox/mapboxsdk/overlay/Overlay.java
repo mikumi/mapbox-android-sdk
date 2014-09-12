@@ -10,7 +10,11 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+
 import com.mapbox.mapboxsdk.views.MapView;
+import com.mapbox.mapboxsdk.views.safecanvas.ISafeCanvas;
+import com.mapbox.mapboxsdk.views.safecanvas.SafePaint;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -232,18 +236,22 @@ public abstract class Overlay {
     protected static synchronized void drawAt(final Canvas canvas, final Drawable drawable,
             final Point origin, final Point offset, final boolean shadow,
             final float aMapOrientation) {
+//        ISafeCanvas canvas2 = (ISafeCanvas) canvas;
         canvas.save();
         canvas.rotate(-aMapOrientation, origin.x, origin.y);
         canvas.translate(origin.x + offset.x, origin.y + offset.y);
         drawable.draw(canvas);
-//        Paint paint = new Paint();
+//        SafePaint paint = new SafePaint();
 //        paint.setColor(Color.RED);
+//        paint.setStyle(Paint.Style.STROKE);
 //        paint.setStrokeWidth(3);
-//        canvas.drawLine(0, -9, 0, 9, paint);
-//        canvas.drawLine(-9, 0, 9, 0, paint);
-//        canvas.drawRect(drawable.getBounds(), paint);
+//        canvas2.drawLine(-offset.x, -offset.y-9, -offset.x, -offset.y+9, paint);
+//        canvas2.drawLine(-offset.x-9, -offset.y, -offset.x+9, -offset.y, paint);
+//        canvas2.drawRect(drawable.getBounds(), paint);
         canvas.restore();
     }
+    
+    
 
     /**
      * Interface definition for overlays that contain items that can be snapped to (for example,
