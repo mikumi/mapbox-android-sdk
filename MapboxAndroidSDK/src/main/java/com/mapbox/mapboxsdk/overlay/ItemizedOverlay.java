@@ -85,7 +85,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
             return false;
         }
         item.updateDrawingPosition();
-        if (!RectF.intersects(mapBounds, item.getMapDrawingBounds(projection, null))) {
+        if (!RectF.intersects(mapBounds, item.getMapDrawingBounds())) {
             //dont draw item if offscreen
             return false;
         }
@@ -193,6 +193,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
             return;
         }
         final PointF position = item.getPositionOnMap();
+        final RectF drawingBounds = item.getMapDrawingBounds();
         final Point roundedCoords = new Point((int) position.x, (int) position.y);
 
         canvas.save();
