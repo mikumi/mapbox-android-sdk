@@ -43,7 +43,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
                     return sortA.compareTo(sortB);
                 }
                 //least index in front
-                return mItemList.indexOf(b) - mItemList.indexOf(a);
+                return b.getIndexForFastSort() - b.getIndexForFastSort();
             }
         });
         super.populate();
@@ -69,6 +69,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
 
     public boolean addItem(final Marker item) {
         item.setParentHolder(this);
+        item.setIndexForFastSort(mItemList.size());
         final boolean result = mItemList.add(item);
         populate();
         return result;
