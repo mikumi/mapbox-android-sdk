@@ -431,6 +431,10 @@ public class Projection implements GeoConstants {
     public static LatLng pixelXYToLatLong(double pixelX, double pixelY, final float levelOfDetail) {
         final double mapSize = mapSize(levelOfDetail);
         final double maxSize = mapSize - 1.0;
+        if (mapSize < maxSize) {
+            return null;
+        }
+        
         double x = wrap(pixelX, 0, maxSize, mapSize);
         double y = wrap(pixelY, 0, maxSize, mapSize);
 
