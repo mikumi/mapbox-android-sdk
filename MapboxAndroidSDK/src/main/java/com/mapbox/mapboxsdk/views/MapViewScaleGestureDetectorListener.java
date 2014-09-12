@@ -38,11 +38,13 @@ public class MapViewScaleGestureDetectorListener
         lastFocusY = detector.getFocusY();
         firstSpan = detector.getCurrentSpan();
         currentScale = 1.0f;
+
         if (!this.mapView.isAnimating()) {
             this.mapView.setIsAnimating(true);
             this.mapView.getController().aboutToStartAnimation(lastFocusX, lastFocusY);
             scaling = true;
         }
+
         return true;
     }
 
@@ -73,14 +75,22 @@ public class MapViewScaleGestureDetectorListener
             return;
         }
 
+        // android scale gesture is recognized a lot too easily which makes
+        // double taps recognized as scales. So here we check if the scale is too small.
+        // if is we ignore it
+        final float preZoom = mapView.getZoomLevel(false);
+        final float newZoom = (float) (Math.log(currentScale) / Math.log(2d) + preZoom);
+        if (Math.abs(newZoom - preZoom) < 0.1f) {
+            mapView.setIsAnimating(false);
+            return;
+        }
         //delaying the "end" will prevent some crazy scroll events when finishing
         //scaling by getting 2 fingers very close to each other
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                float preZoom = mapView.getZoomLevel(false);
-                float newZoom = (float) (Math.log(currentScale) / Math.log(2d) + preZoom);
+
                 //set animated zoom so that animationEnd will correctly set it in the mapView
                 mapView.setAnimatedZoom(newZoom);
                 mapView.getController().onAnimationEnd();

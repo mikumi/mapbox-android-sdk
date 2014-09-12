@@ -42,7 +42,8 @@ public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
     @Override
     public boolean onFling(final MotionEvent e1, final MotionEvent e2, final float velocityX,
             final float velocityY) {
-        if (this.mapView.isAnimating() || this.mapView.getOverlayManager()
+        //scale gesture also running so ignore if in scale
+        if (this.mapView.inScaleGesture() || this.mapView.isAnimating() || this.mapView.getOverlayManager()
                 .onFling(e1, e2, velocityX, velocityY, this.mapView)) {
             return true;
         }
@@ -57,6 +58,10 @@ public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
 
     @Override
     public void onLongPress(final MotionEvent e) {
+        //scale gesture also running so ignore if in scale
+        if (this.mapView.inScaleGesture()) {
+            return;
+        }
         if (this.mapView.getOverlayManager().onLongPress(e, this.mapView)) {
             return;
         }
@@ -69,7 +74,9 @@ public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
     @Override
     public boolean onScroll(final MotionEvent e1, final MotionEvent e2, final float distanceX,
             final float distanceY) {
-        if (this.mapView.isAnimating() || this.mapView.getOverlayManager()
+
+        //scale gesture also running so ignore if in scale
+        if (this.mapView.inScaleGesture() || this.mapView.isAnimating() || this.mapView.getOverlayManager()
                 .onScroll(e1, e2, distanceX, distanceY, this.mapView)) {
             return true;
         }
@@ -79,6 +86,10 @@ public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
 
     @Override
     public void onShowPress(final MotionEvent e) {
+        //scale gesture also running so ignore if in scale
+        if (this.mapView.inScaleGesture()) {
+            return;
+        }
         this.mapView.getOverlayManager().onShowPress(e, this.mapView);
     }
 
@@ -94,6 +105,10 @@ public class MapViewGestureDetectorListener extends SimpleOnGestureListener {
 
     @Override
     public boolean onDoubleTap(final MotionEvent e) {
+        //scale gesture also running so ignore if in scale
+        if (this.mapView.inScaleGesture()) {
+            return true;
+        }
         if (this.mapView.getOverlayManager().onDoubleTap(e, this.mapView)) {
             return true;
         }

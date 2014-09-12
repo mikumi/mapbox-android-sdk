@@ -254,6 +254,8 @@ public class MapView extends FrameLayout
 
     private UserLocationOverlay mLocationOverlay;
 
+    private boolean isScaling;
+
     /**
      * Constructor for XML layout calls. Should not be used programmatically.
      *
@@ -1708,15 +1710,14 @@ public class MapView extends FrameLayout
             }
 
             // can't use the scale detector's onTouchEvent() result as it always returns true (Android issue #42591)
-            boolean result, isScaling;
             if (rotatedEvent.getPointerCount() != 1) {
+            boolean result;
                 mScaleGestureDetector.onTouchEvent(rotatedEvent);
             }
-            isScaling = result = mScaleGestureDetector.isInProgress();
-            if (!isScaling) {
-                // if no scaling is performed check for other gestures (fling, long tab, etc.)
-                result =  mGestureDetector.onTouchEvent(rotatedEvent);
-            }
+            //both gestures have to be running at the same times
+            //otherwise we will get unwanted long presses (because not cancelled)
+            isScaling = mScaleGestureDetector.isInProgress();
+            result = mGestureDetector.onTouchEvent(rotatedEvent);
             canTapTwoFingers = canTapTwoFingers & !result;
             //handleTwoFingersTap should always be called because it counts pointers up/down
             result |= handleTwoFingersTap(rotatedEvent);
