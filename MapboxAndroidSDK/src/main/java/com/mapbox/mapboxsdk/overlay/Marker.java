@@ -37,6 +37,7 @@ public class Marker {
     protected Drawable mMarker;
     protected PointF mAnchor = null;
 
+    private int mIndexForFastSort = 0;
     private String mTitle = "";
     private String mDescription = "";
     private String mSubDescription = "";
@@ -155,6 +156,14 @@ public class Marker {
         NONE, CENTER, BOTTOM_CENTER, TOP_CENTER, RIGHT_CENTER,
         LEFT_CENTER, UPPER_RIGHT_CORNER, LOWER_RIGHT_CORNER,
         UPPER_LEFT_CORNER, LOWER_LEFT_CORNER
+    }
+    
+    public void setIndexForFastSort(final int index) {
+        mIndexForFastSort = index;
+    }
+    
+    public int getIndexForFastSort() {
+        return mIndexForFastSort;
     }
 
     public String getUid() {
@@ -303,7 +312,7 @@ public class Marker {
 
     public Point getAnchor() {
         if (mAnchor != null) {
-            int markerWidth = getWidth(), markerHeight = getHeight();
+            int markerWidth = getWidth(), markerHeight = getHeight() *2;
             return new Point((int) (-mAnchor.x * markerWidth), (int) (-mAnchor.y * markerHeight));
         }
         return new Point(0, 0);
@@ -377,14 +386,14 @@ public class Marker {
         }
         final PointF position = getPositionOnScreen(projection, null);
         final int w = getWidth();
-        final int h = getHeight();
+        final int h = 2*getHeight();
         final float x = position.x - mAnchor.x * w;
         final float y = position.y - mAnchor.y * h;
-        reuse.set(x, y, x + w, y + h * 2);
+        reuse.set(x, y, x + w, y + h);
         return reuse;
     }
 
-    protected RectF getMapDrawingBounds(final Projection projection, RectF reuse) {
+    protected RectF internalGetMapDrawingBounds(final Projection projection, RectF reuse) {
         if (reuse == null) {
             reuse = new RectF();
         }
@@ -395,6 +404,11 @@ public class Marker {
         final float y = mCurMapCoords.y - mAnchor.y * h;
         reuse.set(x, y, x + w, y + h * 2);
         return reuse;
+    }
+    
+    protected RectF getMapDrawingBounds() {
+
+        return mMyLocationRect;
     }
 
     public PointF getHotspotScale(HotspotPlace place, PointF reuse) {
@@ -464,11 +478,12 @@ public class Marker {
      */
     public void showInfoWindow(InfoWindow infoWindow, MapView aMapView, boolean panIntoView) {
         int markerWidth = getWidth(), markerHeight = getHeight()*2;
-        PointF anchor = infoWindow.getAnchor();
-        if (anchor == null) {
-            anchor = aMapView.getDefaultInfoWindowAnchor();
+        PointF infoAnchor = infoWindow.getAnchor();
+        if (infoAnchor == null) {
+            infoAnchor = aMapView.getDefaultInfoWindowAnchor();
         }
-        PointF tooltipH = new PointF(anchor.x * markerWidth, anchor.y * markerHeight);
+        PointF tooltipH = new PointF((infoAnchor.x + 0.5f - mAnchor.x) * markerWidth, 
+                (infoAnchor.y + 0.5f - mAnchor.y) * markerHeight);
         infoWindow.setMapView(aMapView);
         infoWindow.open(this, this.getPoint(), (int) tooltipH.x, (int) tooltipH.y);
         if (panIntoView) {
@@ -511,7 +526,7 @@ public class Marker {
         if (mapView == null) {
             return; //not on map yet
         }
-        getMapDrawingBounds(mapView.getProjection(), mMyLocationRect);
+        internalGetMapDrawingBounds(mapView.getProjection(), mMyLocationRect);
     }
 
     /**
