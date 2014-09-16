@@ -635,6 +635,18 @@ public class MapView extends FrameLayout implements MapViewConstants,
         }
         this.invalidate();
     }
+    
+    /**
+     * Remove all markers from the map's display.
+     */
+    public void clear()
+    {
+        defaultMarkerList.clear();
+        if (defaultMarkerOverlay != null) {
+            defaultMarkerOverlay.removeAllItems();
+        }
+        this.invalidate();
+    }
 
     /**
      * Select a marker, showing a tooltip if the marker has content that would
