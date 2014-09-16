@@ -360,6 +360,7 @@ public abstract class ItemizedOverlay extends SafeDrawOverlay implements Overlay
      */
     public void blurItem(final Marker item) {
         if (mFocusedItem == item) {
+            item.closeInfoWindow();
             setFocus(null);
         }
     }
