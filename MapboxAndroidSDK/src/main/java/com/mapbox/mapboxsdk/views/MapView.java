@@ -630,7 +630,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
      * Remove a marker from the map's display.
      */
     public void removeMarker(final Marker marker) {
-        defaultMarkerList.remove(marker);
         if (defaultMarkerOverlay != null) {
             defaultMarkerOverlay.removeItem(marker);
         }
