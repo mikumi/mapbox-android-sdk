@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Build;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -329,7 +330,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.MapView);
         String mapid = a.getString(R.styleable.MapView_mapid);
-        if (!Utils.StringNullOrEmpty(mapid)) {
+        if (!TextUtils.isEmpty(mapid)) {
             setTileSource(new MapboxTileLayer(mapid));
         } else {
             Log.w(TAG, "mapid not set.");
@@ -384,7 +385,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
      * @param listener
      */
     public void removeListener(MapListener listener) {
-        if (!mListeners.contains(listener)) {
+        if (mListeners.contains(listener)) {
             mListeners.remove(listener);
         }
     }

@@ -2,6 +2,7 @@ package com.mapbox.mapboxsdk.util;
 
 import android.content.Context;
 import android.graphics.Paint;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.cocoahero.android.geojson.Feature;
@@ -42,7 +43,7 @@ public class DataLoadingUtils {
      * @throws JSONException
      */
     public static FeatureCollection loadGeoJSONFromUrl(final String url) throws IOException, JSONException {
-        if (Utils.StringNullOrEmpty(url)) {
+        if (TextUtils.isEmpty(url)) {
             throw new NullPointerException("No GeoJSON URL passed in.");
         }
 
@@ -76,7 +77,7 @@ public class DataLoadingUtils {
      * @throws JSONException
      */
     public static FeatureCollection loadGeoJSONFromAssets(final Context context, final String fileName)  throws IOException, JSONException {
-        if (Utils.StringNullOrEmpty(fileName)) {
+        if (TextUtils.isEmpty(fileName)) {
             throw new NullPointerException("No GeoJSON File Name passed in.");
         }
 

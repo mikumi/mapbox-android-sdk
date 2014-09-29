@@ -1,5 +1,6 @@
 package com.mapbox.mapboxsdk.tileprovider.tilesource;
 
+import android.text.TextUtils;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.util.Utils;
 import com.mapbox.mapboxsdk.views.util.constants.MapViewConstants;
@@ -37,8 +38,8 @@ public class MapboxTileLayer extends TileJsonTileLayer
 
     @Override
     public TileLayer setURL(final String aUrl) {
-        if (!Utils.StringNullOrEmpty(aUrl) &&
-                !aUrl.toLowerCase().contains("http://") && !aUrl.toLowerCase()
+        if (!TextUtils.isEmpty(aUrl) &&
+                !aUrl.toLowerCase(Locale.US).contains("http://") && !aUrl.toLowerCase(Locale.US)
                 .contains("https://")) {
             super.setURL(MAPBOX_BASE_URL + aUrl + "/{z}/{x}/{y}{2x}.png");
         } else {

@@ -1,6 +1,7 @@
 package com.mapbox.mapboxsdk.overlay;
 
 import android.os.AsyncTask;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.cocoahero.android.geojson.FeatureCollection;
@@ -23,7 +24,7 @@ public class GeoJSONPainter {
     }
 
     public void loadFromURL(final String url) {
-        if (Utils.StringNullOrEmpty(url)) {
+        if (TextUtils.isEmpty(url)) {
             return;
         }
         new LoadAndDisplay().execute(url);

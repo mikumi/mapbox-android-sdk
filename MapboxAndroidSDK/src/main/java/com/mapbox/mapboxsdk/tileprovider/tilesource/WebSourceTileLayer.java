@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.TextUtils;
 import android.util.Log;
-
 import com.mapbox.mapboxsdk.tileprovider.MapTile;
 import com.mapbox.mapboxsdk.tileprovider.MapTileCache;
 import com.mapbox.mapboxsdk.tileprovider.modules.MapTileDownloader;
@@ -69,7 +68,7 @@ public class WebSourceTileLayer extends TileLayer {
      */
     public String[] getTileURLs(final MapTile aTile, boolean hdpi) {
         String url = getTileURL(aTile, hdpi);
-        if (!Utils.StringNullOrEmpty(url)) {
+        if (!TextUtils.isEmpty(url)) {
             return new String[] { url };
         }
         return null;
