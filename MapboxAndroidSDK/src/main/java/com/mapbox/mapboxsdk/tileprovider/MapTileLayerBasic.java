@@ -12,7 +12,6 @@ import com.mapbox.mapboxsdk.views.MapView;
  */
 public class MapTileLayerBasic extends MapTileLayerArray implements IMapTileProviderCallback {
     Context mContext;
-    MapView mMapView;
 
     /**
      * @param pContext
@@ -21,7 +20,7 @@ public class MapTileLayerBasic extends MapTileLayerArray implements IMapTileProv
      */
     public MapTileLayerBasic(final Context pContext, final ITileLayer pTileSource,
             MapView mapView) {
-        super(pContext, pTileSource, new SimpleRegisterReceiver(pContext));
+        super(pContext, pTileSource, new SimpleRegisterReceiver(pContext), mapView);
         this.mContext = pContext;
         this.mMapView = mapView;
 

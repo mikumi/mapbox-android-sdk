@@ -8,11 +8,16 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.util.Log;
+
+import com.jakewharton.disklrucache.DiskLruCache;
 import com.mapbox.mapboxsdk.tileprovider.constants.TileLayerConstants;
 import com.mapbox.mapboxsdk.util.BitmapUtils;
+
 import java.io.File;
 import java.io.InputStream;
+
 import uk.co.senab.bitmapcache.BitmapLruCache;
+import uk.co.senab.bitmapcache.BitmapLruCache.OnDiskCacheSetListener;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 /**
@@ -26,15 +31,17 @@ public class MapTileCache implements TileLayerConstants {
     static final String TAG = "MapTileCache";
     private static final String DISK_CACHE_SUBDIR = "mapbox_tiles_cache";
     private int mMaximumCacheSize;
+    private OnDiskCacheSetListener mDiskCacheListener;
 
-    private boolean mDiskCacheEnabled = false;
+    private boolean mDiskCacheEnabled = true;
 
-    public MapTileCache(final Context aContext) {
-        this(aContext, CACHE_MAPTILEDISKSIZE_DEFAULT);
+    public MapTileCache(final Context aContext, OnDiskCacheSetListener diskCacheListener) {
+        this(aContext, CACHE_MAPTILEDISKSIZE_DEFAULT, diskCacheListener);
     }
 
-    public MapTileCache(final Context aContext, int aMaximumCacheSize) {
+    public MapTileCache(final Context aContext, int aMaximumCacheSize, OnDiskCacheSetListener diskCacheListener) {
         this.context = aContext;
+        this.mDiskCacheListener = diskCacheListener;
         this.mMaximumCacheSize = aMaximumCacheSize;
     }
 
@@ -62,6 +69,7 @@ public class MapTileCache implements TileLayerConstants {
                     .setDiskCacheMaxSize(mMaximumCacheSize)
                     .setDiskCacheLocation(cacheDir)
                     .build();
+            sCachedTiles.setDiskCacheListener(mDiskCacheListener);
             Log.i(TAG, "Disk Cache Enabled: '" + sCachedTiles.isDiskCacheEnabled() + "'; Memory Cache Enabled: '" + sCachedTiles.isMemoryCacheEnabled() + "'");
         }
         return sCachedTiles;

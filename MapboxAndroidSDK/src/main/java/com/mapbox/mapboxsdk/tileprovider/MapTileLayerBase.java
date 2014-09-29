@@ -9,11 +9,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+
+import com.jakewharton.disklrucache.DiskLruCache;
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.tileprovider.constants.TileLayerConstants;
 import com.mapbox.mapboxsdk.tileprovider.tilesource.ITileLayer;
 import com.mapbox.mapboxsdk.util.BitmapUtils;
+import com.mapbox.mapboxsdk.views.MapView;
+
+import uk.co.senab.bitmapcache.BitmapLruCache.OnDiskCacheSetListener;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 /**
@@ -27,8 +32,9 @@ import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
  * @author Marc Kurtz
  * @author Nicolas Gramlich
  */
-public abstract class MapTileLayerBase implements IMapTileProviderCallback, TileLayerConstants {
+public abstract class MapTileLayerBase implements IMapTileProviderCallback, TileLayerConstants, OnDiskCacheSetListener {
     protected Context context;
+    protected MapView mMapView;
     protected final MapTileCache mTileCache;
     private Handler mTileRequestCompleteHandler;
     private boolean mUseDataConnection = true;
@@ -140,16 +146,17 @@ public abstract class MapTileLayerBase implements IMapTileProviderCallback, Tile
      * Creates a {@link MapTileCache} to be used to cache tiles in memory.
      */
     public MapTileCache createTileCache(final Context aContext) {
-        return new MapTileCache(aContext);
+        return new MapTileCache(aContext, this);
     }
 
-    public MapTileLayerBase(final Context aContext, final ITileLayer pTileSource) {
-        this(aContext, pTileSource, null);
+    public MapTileLayerBase(final Context aContext, final ITileLayer pTileSource, MapView mapView) {
+        this(aContext, pTileSource, null, mapView);
     }
 
     public MapTileLayerBase(final Context aContext, final ITileLayer pTileSource,
-            final Handler pDownloadFinishedListener) {
+            final Handler pDownloadFinishedListener, MapView mapView) {
         this.context = aContext;
+        this.mMapView = mapView;
         mTileRequestCompleteHandler = pDownloadFinishedListener;
         mTileSource = pTileSource;
         mTileCache = this.createTileCache(aContext);
@@ -319,5 +326,12 @@ public abstract class MapTileLayerBase implements IMapTileProviderCallback, Tile
         }
     }
 
+    @Override
+    public void onDiskCacheSet(DiskLruCache cache) {
+        if (mMapView != null) {
+            Log.d(TAG, "invalidating mapView after diskCache change");
+            mMapView.postInvalidate();
+        }
+    }
     private static final String TAG = "MapTileLayerBase";
 }

@@ -3,6 +3,7 @@ package com.mapbox.mapboxsdk.tileprovider;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
+
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.tileprovider.modules.MapTileDownloader;
@@ -10,10 +11,13 @@ import com.mapbox.mapboxsdk.tileprovider.modules.MapTileModuleLayerBase;
 import com.mapbox.mapboxsdk.tileprovider.modules.NetworkAvailabilityCheck;
 import com.mapbox.mapboxsdk.tileprovider.tilesource.ITileLayer;
 import com.mapbox.mapboxsdk.util.BitmapUtils;
+import com.mapbox.mapboxsdk.views.MapView;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 
 /**
@@ -48,8 +52,8 @@ public class MapTileLayerArray extends MapTileLayerBase {
      * @param pRegisterReceiver a {@link IRegisterReceiver}
      */
     protected MapTileLayerArray(final Context context, final ITileLayer pTileSource,
-            final IRegisterReceiver pRegisterReceiver) {
-        this(context, pTileSource, pRegisterReceiver, null);
+            final IRegisterReceiver pRegisterReceiver, MapView mapView) {
+        this(context, pTileSource, pRegisterReceiver, mapView, null);
     }
 
     /**
@@ -59,9 +63,9 @@ public class MapTileLayerArray extends MapTileLayerBase {
      * @param pTileProviderArray an array of {@link com.mapbox.mapboxsdk.tileprovider.modules.MapTileModuleLayerBase}
      */
     public MapTileLayerArray(final Context context, final ITileLayer pTileSource,
-            final IRegisterReceiver aRegisterReceiver,
+            final IRegisterReceiver aRegisterReceiver, MapView mapView,
             final MapTileModuleLayerBase[] pTileProviderArray) {
-        super(context, pTileSource);
+        super(context, pTileSource, mapView);
 
         mWorking = new HashMap<MapTile, MapTileRequestState>();
         mUnaccessibleTiles = new ArrayList<MapTile>();

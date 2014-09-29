@@ -65,7 +65,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Chris Banes
  */
 public class BitmapLruCache {
-
+    public static interface OnDiskCacheSetListener {
+        public void onDiskCacheSet(final DiskLruCache cache);
+    }
     /**
      * The recycle policy controls if the {@link android.graphics.Bitmap#recycle()} is automatically
      * called, when it is no longer being used. To set this, use the {@link
@@ -152,6 +154,7 @@ public class BitmapLruCache {
      * Disk Cache Variables
      */
     private DiskLruCache mDiskCache;
+    private OnDiskCacheSetListener diskCacheListener;
 
     // Variables which are only used when the Disk Cache is enabled
     private HashMap<String, ReentrantLock> mDiskCacheEditLocks;
@@ -425,6 +428,7 @@ public class BitmapLruCache {
             lock.lock();
 
             OutputStream os = null;
+            Log.d(Constants.LOG_TAG, "writing to disk cache" + url);
 
             try {
                 DiskLruCache.Editor editor = mDiskCache.edit(key);
@@ -682,6 +686,9 @@ public class BitmapLruCache {
             mDiskCacheFlusherExecutor = new ScheduledThreadPoolExecutor(1);
             mDiskCacheFlusherRunnable = new DiskCacheFlushRunnable(diskCache);
         }
+        if (diskCacheListener != null) {
+            diskCacheListener.onDiskCacheSet(mDiskCache);
+        }
     }
 
     void setMemoryCache(BitmapMemoryLruCache memoryCache) {
@@ -804,6 +811,14 @@ public class BitmapLruCache {
 
 
         return false;
+    }
+
+    public OnDiskCacheSetListener getDiskCacheListener() {
+        return diskCacheListener;
+    }
+
+    public void setDiskCacheListener(OnDiskCacheSetListener diskCacheListener) {
+        this.diskCacheListener = diskCacheListener;
     }
 
     /**
@@ -1052,6 +1067,30 @@ public class BitmapLruCache {
             }
         }
     }
+    
+//    static final class MemoryToDiskCacheRunnable implements Runnable {
+//
+//        private final DiskLruCache mDiskCache;
+//        private final BitmapMemoryLruCache mMemoryCache;
+//
+//        public MemoryToDiskCacheRunnable(BitmapMemoryLruCache memCache, DiskLruCache cache) {
+//            mDiskCache = cache;
+//            mMemoryCache = memCache;
+//        }
+//
+//        public void run() {
+//            // Make sure we're running with a background priority
+//            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+//
+//            Log.d(Constants.LOG_TAG, "MemoryToDiskCacheRunnable");
+//            try {
+//                mMemoryCache.
+//                mDiskCache.flush();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
     public interface InputStreamProvider {
         InputStream getInputStream();
