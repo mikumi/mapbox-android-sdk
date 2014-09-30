@@ -185,7 +185,9 @@ public class MapController implements MapViewConstants {
         // the animation in the middle. Maybe we could have it cancel the zoom operation and jump
         // back to original zoom level?
         if (mMapView.isAnimating()) {
-            mCurrentAnimation.cancel();
+            if (mCurrentAnimation != null) {
+                mCurrentAnimation.cancel();
+            }
             mMapView.setZoomInternal(mMapView.getAnimatedZoom());
             if (jumpToTarget && zoomOnLatLong != null) {
                 goTo(zoomOnLatLong, zoomDeltaScroll);
