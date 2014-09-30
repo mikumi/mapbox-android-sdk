@@ -42,8 +42,6 @@ public class MapTileLayerArray extends MapTileLayerBase {
 
     protected final List<MapTileModuleLayerBase> mTileProviderList;
 
-    protected final List<MapTile> mUnaccessibleTiles;
-
     protected final NetworkAvailabilityCheck mNetworkAvailabilityCheck;
 
     /**
@@ -68,7 +66,6 @@ public class MapTileLayerArray extends MapTileLayerBase {
         super(context, pTileSource, mapView);
 
         mWorking = new HashMap<MapTile, MapTileRequestState>();
-        mUnaccessibleTiles = new ArrayList<MapTile>();
 
         mNetworkAvailabilityCheck = new NetworkAvailabilityCheck(context);
 
@@ -100,30 +97,9 @@ public class MapTileLayerArray extends MapTileLayerBase {
         return mNetworkAvailabilityCheck == null || mNetworkAvailabilityCheck.getNetworkAvailable();
     }
 
-    /**
-     * Checks whether this tile is unavailable and the system is offline.
-     *
-     * @param pTile the tile in question
-     * @return whether the tile is unavailable
-     */
-    private boolean tileUnavailable(final MapTile pTile) {
-        if (mUnaccessibleTiles.size() > 0) {
-            if (networkAvailable()) {
-                mUnaccessibleTiles.clear();
-            } else if (mUnaccessibleTiles.contains(pTile)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public Drawable getMapTile(final MapTile pTile, final boolean allowRemote) {
-        if (tileUnavailable(pTile)) {
-            Log.d(TAG, "MapTileLayerArray.getMapTile() tileUnavailable: " + pTile);
-            return null;
-        }
-
+        
         CacheableBitmapDrawable tileDrawable = mTileCache.getMapTileFromMemory(pTile);
 
         if (tileDrawable != null && tileDrawable.isBitmapValid() && !BitmapUtils.isCacheDrawableExpired(tileDrawable)) {
@@ -171,7 +147,6 @@ public class MapTileLayerArray extends MapTileLayerBase {
         synchronized (mWorking) {
             mWorking.remove(aState.getMapTile());
         }
-        mUnaccessibleTiles.remove(aState.getMapTile()); //make sure it's removed
         super.mapTileRequestCompleted(aState, aDrawable);
     }
 
@@ -183,9 +158,6 @@ public class MapTileLayerArray extends MapTileLayerBase {
         } else {
             synchronized (mWorking) {
                 mWorking.remove(aState.getMapTile());
-            }
-            if (!networkAvailable()) {
-                mUnaccessibleTiles.add(aState.getMapTile());
             }
             super.mapTileRequestFailed(aState);
         }
@@ -298,7 +270,6 @@ public class MapTileLayerArray extends MapTileLayerBase {
         if (pTileSource == null) {
             return;
         }
-        mUnaccessibleTiles.clear(); //nothing is unaccessible anymore!
 
         handleAddTileSource(pTileSource, index);
     }
