@@ -43,7 +43,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
                     return sortA.compareTo(sortB);
                 }
                 //least index in front
-                return b.getIndexForFastSort() - b.getIndexForFastSort();
+                return b.getIndexForFastSort() - a.getIndexForFastSort();
             }
         });
         super.populate();
