@@ -129,6 +129,7 @@ public class ItemizedIconOverlay extends ItemizedOverlay {
     }
 
     public void removeAllItems(final boolean withPopulate) {
+        this.setFocus(null);
         for (Marker item : mItemList) {
             item.setParentHolder(null);
         }
