@@ -1,10 +1,12 @@
-language: java
-
+language: android
 jdk: oraclejdk7
+android:
+  components:
+    - build-tools-20.0.0
+    - android-20
+    - extra-android-support
 
-before_install:
-  - export TERM=dumb
-  - sudo apt-get install -qq libstdc++6:i386 lib32z1
+script: ./gradlew clean assemble
 
 notifications:
   email: false

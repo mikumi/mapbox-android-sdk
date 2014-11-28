@@ -25,7 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Scroller;
-
+import com.almeros.android.multitouch.RotateGestureDetector;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.api.ILatLng;
@@ -58,6 +58,7 @@ import com.mapbox.mapboxsdk.util.GeometryMath;
 import com.mapbox.mapboxsdk.util.NetworkUtils;
 import com.mapbox.mapboxsdk.util.Utils;
 import com.mapbox.mapboxsdk.util.constants.UtilConstants;
+import com.mapbox.mapboxsdk.views.util.OnMapOrientationChangeListener;
 import com.mapbox.mapboxsdk.views.util.Projection;
 import com.mapbox.mapboxsdk.views.util.TileLoadedListener;
 import com.mapbox.mapboxsdk.views.util.TilesLoadedListener;
@@ -248,6 +249,10 @@ public class MapView extends FrameLayout implements MapViewConstants,
     private final MapController mController;
 
     protected ScaleGestureDetector mScaleGestureDetector;
+    protected RotateGestureDetector mRotateGestureDetector;
+    protected boolean mMapRotationEnabled;
+    protected OnMapOrientationChangeListener mOnMapOrientationChangeListener;
+
     protected float mMultiTouchScale = 1.0f;
     protected PointF mMultiTouchScalePoint = new PointF();
     protected Matrix mInvTransformMatrix = new Matrix();
@@ -320,9 +325,10 @@ public class MapView extends FrameLayout implements MapViewConstants,
         this.mGestureDetector = new GestureDetector(aContext,
                 new MapViewGestureDetectorListener(this));
 
-        mScaleGestureDetector = new ScaleGestureDetector(aContext,
-                new MapViewScaleGestureDetectorListener(this));
-
+        this.mScaleGestureDetector =
+                new ScaleGestureDetector(aContext, new MapViewScaleGestureDetectorListener(this));
+        this.mRotateGestureDetector =
+                new RotateGestureDetector(aContext, new MapViewRotateGestureDetectorListener(this));
         this.context = aContext;
         eventsOverlay = new MapEventsOverlay(aContext, this);
         this.getOverlays().add(eventsOverlay);
@@ -636,12 +642,11 @@ public class MapView extends FrameLayout implements MapViewConstants,
         }
         this.invalidate();
     }
-    
+
     /**
      * Remove all markers from the map's display.
      */
-    public void clear()
-    {
+    public void clear() {
         defaultMarkerList.clear();
         if (defaultMarkerOverlay != null) {
             defaultMarkerOverlay.removeAllItems();
@@ -650,8 +655,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
     }
 
     /**
-     * Select a marker, showing a tooltip if the marker has content that would
-     * appear within it.
+     * Select a marker, showing a tooltip if the marker has content that would appear within it.
      */
     public void selectMarker(final Marker marker) {
         
@@ -994,14 +998,14 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     private final void updateInversedTransformMatrix() {
         mInvTransformMatrix.reset();
-        mInvTransformMatrix.preScale(1 / mMultiTouchScale,
-                1 / mMultiTouchScale, mMultiTouchScalePoint.x,
+        mInvTransformMatrix.preScale(1 / mMultiTouchScale, 1 / mMultiTouchScale, mMultiTouchScalePoint.x,
                 mMultiTouchScalePoint.y);
     }
 
     public final Matrix getInversedTransformMatrix() {
         return mInvTransformMatrix;
     }
+
 
     private void snapItems() {
         // snap for all snappables
@@ -1277,7 +1281,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
     protected float getAnimatedZoom() {
         return Float.intBitsToFloat(mTargetZoomLevel.get());
     }
-
     protected void setAnimatedZoom(float value) {
         mTargetZoomLevel.set(Float.floatToIntBits(value));
     }
@@ -1287,7 +1290,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
     }
 
     protected boolean isAnimatedZoomSet() {
-        return Float.intBitsToFloat(mTargetZoomLevel.get()) != -1;
+        return  Float.intBitsToFloat(mTargetZoomLevel.get()) != -1;
     }
 
     /**
@@ -1418,6 +1421,38 @@ public class MapView extends FrameLayout implements MapViewConstants,
      */
     public float getMapOrientation() {
         return mapOrientation;
+    }
+
+    /**
+     * Gets whether the current map rotation feature is enabled or not
+     * default: disabled
+     */
+    public boolean isMapRotationEnabled() {
+        return mMapRotationEnabled;
+    }
+
+    /**
+     * Sets whether to enable or disable the map rotation features
+     * default: disabled
+     */
+    public void setMapRotationEnabled(boolean enable) {
+        mMapRotationEnabled = enable;
+    }
+
+    /**
+     * Gets the mapView onMapOrientationChangeListener
+     * @return the onMapOrientationChangeListener
+     */
+    public OnMapOrientationChangeListener getOnMapOrientationChangeListener() {
+        return mOnMapOrientationChangeListener;
+    }
+
+    /**
+     * Gets the mapView onMapOrientationChangeListener
+     * @Param l the onMapOrientationChangeListener
+     */
+    public void setOnMapOrientationChangeListener(OnMapOrientationChangeListener l) {
+        this.mOnMapOrientationChangeListener = l;
     }
 
     /**
@@ -1755,6 +1790,10 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        // If map rotation is enabled, propagate onTouchEvent to the rotate gesture detector
+        if (mMapRotationEnabled) {
+            mRotateGestureDetector.onTouchEvent(event);
+        }
         // Get rotated event for some touch listeners.
         MotionEvent rotatedEvent = rotateTouchEvent(event);
 

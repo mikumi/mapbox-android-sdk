@@ -1,16 +1,15 @@
-### API Documentation
+Documentation
+---
 
 The API documentation is generated via script from Javadocs. To update 
-the existing documentation run:
+the existing documentation you'll need to do the following:
 
-1. Update `_config.yml` [version and snapshot lines](https://github.com/mapbox/mapbox-android-sdk/blob/mb-pages/_config.yml#L7-L8)
-2. Update `_config.mb-pages.yml` [version and snapshot lines](https://github.com/mapbox/mapbox-android-sdk/blob/mb-pages/_config.mb-pages.yml#L7-L8)
-3. Run the following on Command Line
+- On OSX? Install [gnu-sed](https://sagebionetworks.jira.com/wiki/display/PLFM/Fixing+sed+on+OSx).
+- Update the version key in [`_config.yml`](https://github.com/mapbox/mapbox-android-sdk/blob/9a04e30cef45d602f3e67a237f7d877c210f5e11/_config.yml#L8).
+- Update the version key in [`_config.mb-pages.yml`](https://github.com/mapbox/mapbox-android-sdk/blob/9a04e30cef45d602f3e67a237f7d877c210f5e11/_config.mb-pages.yml#L8).
+- Scrape and build the docs with:
 
-```bash
-    cd docs/_build
-    ./build VERSION
+```sh
+cd docs/_build
+./build 0.your.version
 ```
-
-`VERSION` should be replaced with the latest Mapbox Android SDK version (ie 0.2.3).
-UP
