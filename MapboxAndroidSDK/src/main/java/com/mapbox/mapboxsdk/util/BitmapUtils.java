@@ -53,7 +53,7 @@ public class BitmapUtils {
             memoryClass = ActivityManagerHoneycomb.getLargeMemoryClass(am);
         }
         Log.d(TAG, "LargeHeap enabled? = '" + largeHeap + "'");
-        final int memUsageRatio = (memoryClass > 96) ? 3 : 7;
+        final int memUsageRatio = (memoryClass > 96) ? 4 : 7;
         int heapRes = 1024 * 1024 * memoryClass / memUsageRatio;
         Log.d(TAG, "Heap Reserve Request For Cache Size = '" + heapRes + "'");
         ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
