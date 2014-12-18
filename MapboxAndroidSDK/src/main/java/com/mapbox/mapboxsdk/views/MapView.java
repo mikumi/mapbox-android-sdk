@@ -4,28 +4,29 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
-import android.os.Build;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Scroller;
-import com.almeros.android.multitouch.RotateGestureDetector;
+
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.api.ILatLng;
@@ -56,8 +57,9 @@ import com.mapbox.mapboxsdk.util.BitmapUtils;
 import com.mapbox.mapboxsdk.util.DataLoadingUtils;
 import com.mapbox.mapboxsdk.util.GeometryMath;
 import com.mapbox.mapboxsdk.util.NetworkUtils;
-import com.mapbox.mapboxsdk.util.Utils;
 import com.mapbox.mapboxsdk.util.constants.UtilConstants;
+import com.mapbox.mapboxsdk.views.gesture.MapViewGesturesHandler;
+import com.mapbox.mapboxsdk.views.safecanvas.SafePaint;
 import com.mapbox.mapboxsdk.views.util.OnMapOrientationChangeListener;
 import com.mapbox.mapboxsdk.views.util.Projection;
 import com.mapbox.mapboxsdk.views.util.TileLoadedListener;
@@ -68,7 +70,6 @@ import com.mapbox.mapboxsdk.views.util.constants.MapViewLayouts;
 import org.json.JSONException;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -218,7 +219,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
     private boolean firstMarker = true;
 
     private static final String TAG = "MapBox MapView";
-    private static Method sMotionEventTransformMethod;
 
     /**
      * Current zoom level for map tiles.
@@ -230,37 +230,29 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     private final OverlayManager mOverlayManager;
 
-    private Projection mProjection;
+    private Projection mProjection = new Projection(this);
     private boolean mLayedOut;
 
     private final TilesOverlay mTilesOverlay;
-
-    private final GestureDetector mGestureDetector;
+//    private final GradientDrawable mSkyDrawable;
 
     /**
      * Handles map scrolling
      */
     protected final Scroller mScroller;
-    protected boolean mIsFlinging;
 
     private final AtomicInteger mTargetZoomLevel = new AtomicInteger();
     private final AtomicBoolean mIsAnimating = new AtomicBoolean(false);
 
     private final MapController mController;
 
-    protected ScaleGestureDetector mScaleGestureDetector;
-    protected RotateGestureDetector mRotateGestureDetector;
-    protected boolean mMapRotationEnabled;
+    private MapViewGesturesHandler mGesturesHandler;
+
     protected OnMapOrientationChangeListener mOnMapOrientationChangeListener;
 
-    protected float mMultiTouchScale = 1.0f;
-    protected PointF mMultiTouchScalePoint = new PointF();
-    protected Matrix mInvTransformMatrix = new Matrix();
 
     protected List<MapListener> mListeners = new ArrayList<MapListener>();
 
-    private float mapOrientation = 0;
-    private final float[] mRotatePoints = new float[2];
     private final Rect mInvalidateRect = new Rect();
 
     protected BoundingBox mScrollableAreaBoundingBox = null;
@@ -288,7 +280,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     private UserLocationOverlay mLocationOverlay;
 
-    private boolean isScaling;
 
     /**
      * Constructor for XML layout calls. Should not be used programmatically.
@@ -313,6 +304,13 @@ public class MapView extends FrameLayout implements MapViewConstants,
             tileProvider = new MapTileLayerBasic(aContext, null, this);
         }
 
+//        mSkyDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+//                new int[] {0xFFFF0000, 0xFF00FF00});
+//        mSkyDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT);
+//        mSkyDrawable.setShape(GradientDrawable.RECTANGLE);
+//        mSkyDrawable.setGradientRadius((float)(Math.sqrt(2) * 60));
+//        mSkyDrawable.setDither(true);
+
         mTileRequestCompleteHandler = tileRequestCompleteHandler == null ? new SimpleInvalidationHandler(
                 this) : tileRequestCompleteHandler;
         mTileProvider = tileProvider;
@@ -321,15 +319,8 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
         mTilesOverlay = new TilesOverlay(mTileProvider);
         mOverlayManager = new OverlayManager(mTilesOverlay);
-
-        this.mGestureDetector = new GestureDetector(aContext,
-                new MapViewGestureDetectorListener(this));
-
-        this.mScaleGestureDetector =
-                new ScaleGestureDetector(aContext, new MapViewScaleGestureDetectorListener(this));
-        this.mRotateGestureDetector =
-                new RotateGestureDetector(aContext, new MapViewRotateGestureDetectorListener(this));
         this.context = aContext;
+        this.mGesturesHandler = new MapViewGesturesHandler(context, this, mScroller);
         eventsOverlay = new MapEventsOverlay(aContext, this);
         this.getOverlays().add(eventsOverlay);
 
@@ -359,6 +350,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
             Log.d(TAG, "zoomLevel is not specified in XML.");
         }
         a.recycle();
+
     }
 
     public MapView(final Context aContext) {
@@ -508,7 +500,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
         if (child.getLayoutParams() instanceof MapView.LayoutParams) {
             final MapView.LayoutParams lp = (MapView.LayoutParams) child
                     .getLayoutParams();
-            final float mapScale = 1 / mMultiTouchScale;
+            final float mapScale = 1 / mProjection.getScale();
             canvas.scale(mapScale, mapScale, lp.mapPoint.x, lp.mapPoint.y);
             canvas.translate(-getWidth() / 2, -getHeight() / 2);
         }
@@ -585,26 +577,45 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     @Override
     protected void dispatchDraw(Canvas c) {
-        mProjection = updateProjection();
+
+        updateProjectionIfNeeded();
 
         // Save the current canvas matrix
         c.save();
 
-        c.translate(getWidth() / 2, getHeight() / 2);
-        c.scale(mMultiTouchScale, mMultiTouchScale, mMultiTouchScalePoint.x,
-                mMultiTouchScalePoint.y);
-
-        // rotate Canvas
-        c.rotate(mapOrientation, mProjection.getScreenRect().exactCenterX(),
-                mProjection.getScreenRect().exactCenterY());
+        mProjection.transformCanvas(c);
 
         // Draw all Overlays.
         this.getOverlayManager().draw(c, this);
+
 
         // draw all children (mostly tooltips)
         super.dispatchDraw(c);
 
         c.restore();
+//
+//        c.save();
+////        c.translate(-getScrollX(), -getScrollY());
+//        Paint paint = new Paint();
+//        paint.setShader(new LinearGradient(
+//                0,
+//                getScrollY(),
+//                0,
+//                getScrollY()+mProjection.getMapSkew()*10,
+//                new int[] {
+//                        0xff83BDEE,
+//                        0xff83BDEE,
+//                        0x0083BDEE},
+//                new float[] { 0, 0.7f, 1 },
+//                Shader.TileMode.CLAMP));
+//        ;
+//
+//
+//        c.drawPaint(paint);
+//        c.restore();
+
+
+
     }
 
     public void addTooltipView(final View tooltipView,
@@ -894,7 +905,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
             return null;
         }
         Log.w(TAG, "getBoundingBoxInternal" + mZoomLevel);
-        final Rect screenRect = GeometryMath
+        final RectF screenRect = GeometryMath
                 .viewPortRect(getProjection(), null);
         ILatLng neGeoPoint = Projection.pixelXYToLatLong(screenRect.right,
                 screenRect.top, mZoomLevel);
@@ -927,15 +938,17 @@ public class MapView extends FrameLayout implements MapViewConstants,
                 (float) mDScroll.y + worldSize_current_2, mZoomLevel);
     }
 
-    public Rect getIntrinsicScreenRect(Rect reuse) {
+    public RectF getIntrinsicScreenRect(RectF reuse) {
         if (reuse == null) {
-            reuse = new Rect();
+            reuse = new RectF();
         }
-        final int width_2 = getMeasuredWidth() >> 1;
+        final int skewWidthDecale = (int)(getMapSkew() * 10);
+        final int skewHeightDecale = (int)(Math.pow(getMapSkew(), 2.2f));
+        final int width_2 = (getMeasuredWidth() >> 1)  + skewWidthDecale;
         final int height_2 = getMeasuredHeight() >> 1;
         final int scrollX = getScrollX();
         final int scrollY = getScrollY();
-        reuse.set(scrollX - width_2, scrollY - height_2, scrollX + width_2,
+        reuse.set(scrollX - width_2, scrollY - height_2 - skewHeightDecale, scrollX + width_2,
                 scrollY + height_2);
         return reuse;
     }
@@ -950,11 +963,23 @@ public class MapView extends FrameLayout implements MapViewConstants,
      *         projection of the map could change.
      */
     public Projection getProjection() {
-        if (mProjection == null) {
-            mProjection = new Projection(this);
-        }
+        updateProjectionIfNeeded();
         return mProjection;
     }
+
+    private void updateProjectionIfNeeded() {
+        mProjection.updateIfNeeded();
+    }
+
+    private void updateProjection() {
+        mProjection.setNeedsUpdate();
+        mProjection.updateIfNeeded();
+    }
+
+    private void askForProjectionUpdate() {
+        mProjection.setNeedsUpdate();
+    }
+
 
     /**
      * Set the centerpoint of the map view, given a latitude and longitude
@@ -985,25 +1010,10 @@ public class MapView extends FrameLayout implements MapViewConstants,
         float zoomDelta = (float) (Math.log(scale) / Math.log(2d));
         float newZoom = mZoomLevel + zoomDelta;
         if (newZoom <= mMaximumZoomLevel && newZoom >= mMinimumZoomLevel) {
-            mMultiTouchScale = scale;
-            updateInversedTransformMatrix();
+            mProjection.setScale(scale);
             invalidate();
         }
         return this;
-    }
-
-    public float getScale() {
-        return mMultiTouchScale;
-    }
-
-    private final void updateInversedTransformMatrix() {
-        mInvTransformMatrix.reset();
-        mInvTransformMatrix.preScale(1 / mMultiTouchScale, 1 / mMultiTouchScale, mMultiTouchScalePoint.x,
-                mMultiTouchScalePoint.y);
-    }
-
-    public final Matrix getInversedTransformMatrix() {
-        return mInvTransformMatrix;
     }
 
 
@@ -1043,15 +1053,13 @@ public class MapView extends FrameLayout implements MapViewConstants,
         final float curZoomLevel = this.mZoomLevel;
 
         // reset the touchScale because from now on the zoom is the new one
-        mMultiTouchScale = 1.0f;
-        mInvTransformMatrix.reset();
+        mProjection.setScale(1.0f);
 
         if (newZoomLevel != curZoomLevel) {
             this.mZoomLevel = newZoomLevel;
             // just to be sure any one got the right one
             setAnimatedZoom(this.mZoomLevel);
             mScroller.forceFinished(true);
-            mIsFlinging = false;
             updateScrollableAreaLimit();
         }
 
@@ -1088,7 +1096,8 @@ public class MapView extends FrameLayout implements MapViewConstants,
             }
         }
 
-        mProjection = new Projection(this);
+        askForProjectionUpdate();
+
         // snap for all snappables
         snapItems();
 
@@ -1354,10 +1363,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
         return true;
     }
 
-    public boolean inScaleGesture() {
-        return isScaling;
-    }
-
     /**
      * Determine whether the map is at its minimum zoom
      * 
@@ -1382,6 +1387,11 @@ public class MapView extends FrameLayout implements MapViewConstants,
         return getController().zoomInAbout(point, userAction);
     }
 
+    public boolean zoomInFixing(final float screenX, final float screenY, final boolean userAction) {
+        final ILatLng center = getProjection().fromPixels(screenX, screenY);
+        return zoomInFixing(center, userAction);
+    }
+
     public boolean zoomInFixing(final ILatLng point) {
         return zoomInFixing(point, false);
     }
@@ -1397,6 +1407,11 @@ public class MapView extends FrameLayout implements MapViewConstants,
         return getController().zoomOutAbout(point, userAction);
     }
 
+    public boolean zoomOutFixing(final float screenX, final float screenY, final boolean userAction) {
+        final ILatLng center = getProjection().fromPixels(screenX, screenY);
+        return zoomOutFixing(center, userAction);
+    }
+
     public boolean zoomOutFixing(final ILatLng point) {
         return zoomOutFixing(point, false);
     }
@@ -1409,8 +1424,27 @@ public class MapView extends FrameLayout implements MapViewConstants,
      *            the angle of the map
      */
     public void setMapOrientation(float degrees) {
-        this.mapOrientation = degrees % 360.0f;
-        this.mProjection = null;
+        mProjection.setMapRotation(degrees);
+        // If a listener has been set, callback
+        if (mOnMapOrientationChangeListener != null) {
+            mOnMapOrientationChangeListener.onMapOrientationChange(mProjection.getMapOrientation());
+        }
+        this.invalidate();
+    }
+
+    /**
+     * Set the rotation of the map, in degrees. A value of 0, meaning straight
+     * up, is default.
+     *
+     * @param degrees
+     *            the angle of the map
+     */
+    public void setMapSkew(float degrees) {
+        mProjection.setMapSkew(degrees);
+        // If a listener has been set, callback
+//        if (mOnMapOrientationChangeListener != null) {
+//            mOnMapOrientationChangeListener.onMapOrientationChange(degrees);
+//        }
         this.invalidate();
     }
 
@@ -1420,7 +1454,16 @@ public class MapView extends FrameLayout implements MapViewConstants,
      * @return the current angle in degrees.
      */
     public float getMapOrientation() {
-        return mapOrientation;
+        return mProjection.getMapOrientation();
+    }
+
+    /**
+     * Gets the current skew of rotation of the map
+     *
+     * @return the current skew in degrees.
+     */
+    public float getMapSkew() {
+        return mProjection.getMapSkew();
     }
 
     /**
@@ -1428,7 +1471,23 @@ public class MapView extends FrameLayout implements MapViewConstants,
      * default: disabled
      */
     public boolean isMapRotationEnabled() {
-        return mMapRotationEnabled;
+        return mGesturesHandler.isRotationEnabled();
+    }
+
+    /**
+     * Gets whether the current map scale feature is enabled or not
+     * default: enabled
+     */
+    public boolean isMapScaleEnabled() {
+        return mGesturesHandler.isScaleEnabled();
+    }
+
+    /**
+     * Gets whether the current map shove feature is enabled or not
+     * default: disabled
+     */
+    public boolean isMapShoveEnabled() {
+        return mGesturesHandler.isShoveEnabled();
     }
 
     /**
@@ -1436,7 +1495,48 @@ public class MapView extends FrameLayout implements MapViewConstants,
      * default: disabled
      */
     public void setMapRotationEnabled(boolean enable) {
-        mMapRotationEnabled = enable;
+        this.mGesturesHandler.setRotationEnabled(enable);
+    }
+    /**
+     * Sets whether to enable or disable the map rotation features
+     * default: disabled
+     */
+    public void setMapScaleEnabled(boolean enable) {
+        this.mGesturesHandler.setScaleEnabled(enable);
+    }
+    /**
+     * Sets whether to enable or disable the map rotation features
+     * default: disabled
+     */
+    public void setMapShoveEnabled(boolean enable) {
+        this.mGesturesHandler.setShoveEnabled(enable);
+    }
+
+
+    public boolean inRotationGesture() {
+        return mGesturesHandler.isRotating();
+    }
+
+    public boolean inScaleGesture() {
+        return mGesturesHandler.isScaling();
+    }
+
+    public boolean inShoveGesture() {
+        return mGesturesHandler.isShoving();
+    }
+
+    /**
+     * used for the controller to let the gestureHandler know that flinge has been stopped
+     */
+    public void flingeHasStopped() {
+        mGesturesHandler.flingeHasStopped();
+    }
+
+    /**
+     * used for the controller to let the gestureHandler know that flinge has been stopped
+     */
+    public void flingeHasStarted() {
+        mGesturesHandler.flingeHasStarted();
     }
 
     /**
@@ -1587,47 +1687,68 @@ public class MapView extends FrameLayout implements MapViewConstants,
     }
 
     public void invalidateMapCoordinates(final Rect dirty) {
-        mInvalidateRect.set(dirty);
-        final int width_2 = this.getWidth() / 2;
-        final int height_2 = this.getHeight() / 2;
+        synchronized (mInvalidateRect) {
+            mInvalidateRect.set(dirty);
+            final int width_2 = this.getWidth() / 2;
+            final int height_2 = this.getHeight() / 2;
 
-        // Since the canvas is shifted by getWidth/2, we can just return our
-        // natural scrollX/Y value
-        // since that is the same as the shifted center.
-        int centerX = this.getScrollX();
-        int centerY = this.getScrollY();
+            // Since the canvas is shifted by getWidth/2, we can just return our
+            // natural scrollX/Y value
+            // since that is the same as the shifted center.
+//            int centerX = this.getScrollX();
+//            int centerY = this.getScrollY();
 
-        if (this.getMapOrientation() != 0) {
-            GeometryMath.getBoundingBoxForRotatedRectangle(mInvalidateRect,
-                    centerX, centerY, this.getMapOrientation() + 180,
-                    mInvalidateRect);
+//            if (this.getMapOrientation() != 0) {
+//                GeometryMath.getBoundingBoxForRotatedRectangle(mInvalidateRect,
+//                        centerX, centerY, this.getMapOrientation() + 180,
+//                        mInvalidateRect);
+//            }
+            mInvalidateRect.offset(-width_2, -height_2);
+
+            Log.d("DEBUG", "invalidating:" + dirty);
+            super.invalidate(mInvalidateRect);
         }
-        mInvalidateRect.offset(width_2, height_2);
-
-        super.invalidate(mInvalidateRect);
     }
 
     public void invalidateMapCoordinates(final RectF dirty) {
-        dirty.roundOut(mInvalidateRect);
-        final int width_2 = this.getWidth() / 2;
-        final int height_2 = this.getHeight() / 2;
+        synchronized (mInvalidateRect) {
+            final int width_2 = this.getWidth() / 2;
+            final int height_2 = this.getHeight() / 2;
 
-        // Since the canvas is shifted by getWidth/2, we can just return our
-        // natural scrollX/Y value
-        // since that is the same as the shifted center.
-        int centerX = this.getScrollX();
-        int centerY = this.getScrollY();
+            // Since the canvas is shifted by getWidth/2, we can just return our
+            // natural scrollX/Y value
+            // since that is the same as the shifted center.
+            int centerX = this.getScrollX();
+            int centerY = this.getScrollY();
 
-        if (this.getMapOrientation() != 0) {
-            GeometryMath.getBoundingBoxForRotatedRectangle(mInvalidateRect,
-                    centerX, centerY, this.getMapOrientation() + 180,
-                    mInvalidateRect);
+            if (this.getMapOrientation() != 0) {
+                GeometryMath.getBoundingBoxForRotatedRectangle(dirty,
+                        centerX, centerY, this.getMapOrientation() + 180,
+                        dirty);
+            }
+            dirty.offset(width_2, height_2);
+            dirty.roundOut(mInvalidateRect);
+
+            super.invalidate(mInvalidateRect);
         }
-        mInvalidateRect.offset(width_2, height_2);
-
-        super.invalidate(mInvalidateRect);
+    }
+    public void postInvalidateMapCoordinates(final RectF dirty) {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                invalidateMapCoordinates(dirty);
+            }
+        });
     }
 
+    public void postInvalidateMapCoordinates(final Rect dirty) {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                invalidateMapCoordinates(dirty);
+            }
+        });
+    }
     /**
      * Returns a set of layout parameters with a width of
      * {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}, a height of
@@ -1664,7 +1785,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         if (w != 0 && h != 0) {
-            mProjection = null;
+            askForProjectionUpdate();
             if (!mLayedOut) {
                 mLayedOut = true;
                 // first layout: if some actions were triggered before, they
@@ -1719,42 +1840,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
         return super.onTrackballEvent(event);
     }
 
-    private boolean canTapTwoFingers = false;
-    private int multiTouchDownCount = 0;
-
-    private boolean handleTwoFingersTap(MotionEvent event) {
-        int pointerCount = event.getPointerCount();
-        for (int i = 0; i < pointerCount; i++) {
-            int action = event.getActionMasked();
-            switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                multiTouchDownCount = 0;
-                break;
-            case MotionEvent.ACTION_UP:
-                if (!isAnimating() && canTapTwoFingers) {
-                    final ILatLng center = getProjection().fromPixels(
-                            event.getX(), event.getY());
-                    mController.zoomOutAbout(center);
-                    canTapTwoFingers = false;
-                    multiTouchDownCount = 0;
-                    return true;
-                }
-                canTapTwoFingers = false;
-                multiTouchDownCount = 0;
-                break;
-            case MotionEvent.ACTION_POINTER_DOWN:
-                multiTouchDownCount++;
-                canTapTwoFingers = multiTouchDownCount > 1;
-                break;
-            case MotionEvent.ACTION_POINTER_UP:
-                multiTouchDownCount--;
-                // canTapTwoFingers = multiTouchDownCount > 1;
-                break;
-            default:
-            }
-        }
-        return false;
-    }
 
     /*
      * Scroller detection we want to detect scroll end to trigger onCameraChange
@@ -1790,12 +1875,9 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        // If map rotation is enabled, propagate onTouchEvent to the rotate gesture detector
-        if (mMapRotationEnabled) {
-            mRotateGestureDetector.onTouchEvent(event);
-        }
+
         // Get rotated event for some touch listeners.
-        MotionEvent rotatedEvent = rotateTouchEvent(event);
+        MotionEvent rotatedEvent = getProjection().rotateAndSkewTouchEvent(event);
 
         try {
             if (this.getOverlayManager().onTouchEvent(rotatedEvent, this)) {
@@ -1808,52 +1890,12 @@ public class MapView extends FrameLayout implements MapViewConstants,
                 stopScrollerTask();
             }
 
-            // can't use the scale detector's onTouchEvent() result as it always
-            // returns true (Android issue #42591)
-            boolean result;
-            if (rotatedEvent.getPointerCount() > 1) {
-                mScaleGestureDetector.onTouchEvent(rotatedEvent);
-            }
-            //both gestures have to be running at the same times
-            //otherwise we will get unwanted long presses (because not cancelled)
-            isScaling = mScaleGestureDetector.isInProgress();
-            result = mGestureDetector.onTouchEvent(rotatedEvent);
-            canTapTwoFingers = canTapTwoFingers & !result;
-            // handleTwoFingersTap should always be called because it counts
-            // pointers up/down
-            result |= handleTwoFingersTap(rotatedEvent);
-            return result;
+            return mGesturesHandler.onTouch(event, rotatedEvent);
         } finally {
             if (rotatedEvent != event) {
                 rotatedEvent.recycle();
             }
         }
-    }
-
-    private MotionEvent rotateTouchEvent(MotionEvent ev) {
-        if (this.getMapOrientation() == 0) {
-            return ev;
-        }
-        MotionEvent rotatedEvent = MotionEvent.obtain(ev);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            mRotatePoints[0] = ev.getX();
-            mRotatePoints[1] = ev.getY();
-            getProjection().rotatePoints(mRotatePoints);
-            rotatedEvent.setLocation(mRotatePoints[0], mRotatePoints[1]);
-        } else {
-            // This method is preferred since it will rotate historical touch events too
-            try {
-                if (sMotionEventTransformMethod == null) {
-                    sMotionEventTransformMethod = MotionEvent.class.getDeclaredMethod("transform",
-                            new Class[]{Matrix.class});
-                }
-                sMotionEventTransformMethod.invoke(rotatedEvent,
-                        getProjection().getRotationMatrix());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return rotatedEvent;
     }
 
     @Override
@@ -1866,11 +1908,9 @@ public class MapView extends FrameLayout implements MapViewConstants,
                 if (!isAnimating()) {
                     snapItems();
                 }
-                mIsFlinging = false;
+                flingeHasStopped();
             } else {
-                if (!mIsFlinging) {
-                    mIsFlinging = true;
-                }
+                flingeHasStarted();
                 scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
             }
             postInvalidate(); // Keep on drawing until the animation has
@@ -1893,14 +1933,10 @@ public class MapView extends FrameLayout implements MapViewConstants,
         scrollTo((double) point.x, (double) point.y);
     }
 
-    public final PointF getScalePoint() {
-        return mMultiTouchScalePoint;
+    public final float getScale() {
+        return mProjection.getScale();
     }
 
-    public final void setScalePoint(final PointF point) {
-        mMultiTouchScalePoint.set(point);
-        updateInversedTransformMatrix();
-    }
 
     @Override
     public void scrollTo(int x, int y) {
@@ -1950,7 +1986,7 @@ public class MapView extends FrameLayout implements MapViewConstants,
 
         // make sure the next time someone wants the projection it is the
         // correct one!
-        mProjection = null;
+        askForProjectionUpdate();
 
         super.scrollTo(intX, intY);
 
@@ -1970,15 +2006,6 @@ public class MapView extends FrameLayout implements MapViewConstants,
     public void setBackgroundColor(final int pColor) {
         mTilesOverlay.setLoadingBackgroundColor(pColor);
         invalidate();
-    }
-
-    /**
-     * Private Helper Method for onDraw().
-     *
-     * @return New Projection object
-     */
-    private Projection updateProjection() {
-        return new Projection(this);
     }
 
     /**
@@ -2144,8 +2171,17 @@ public class MapView extends FrameLayout implements MapViewConstants,
         return mIsAnimating.get();
     }
 
-    protected void setIsAnimating(final boolean value) {
+    private void setIsAnimating(final boolean value) {
         mIsAnimating.set(value);
+    }
+
+    /** the mapView is about to get animated. */
+    public void hasStartedAnimating() {
+        setIsAnimating(true);
+    }
+    /** the mapView is not animating anymore. */
+    public void hasStoppedAnimating() {
+        setIsAnimating(false);
     }
 
     public TileLoadedListener getTileLoadedListener() {

@@ -22,11 +22,16 @@
 
 package com.mapbox.mapboxsdk.views.util;
 
+import android.graphics.Camera;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
+import android.view.MotionEvent;
+
 import com.mapbox.mapboxsdk.api.ILatLng;
 import com.mapbox.mapboxsdk.geometry.BoundingBox;
 import com.mapbox.mapboxsdk.constants.GeoConstants;
@@ -35,56 +40,103 @@ import com.mapbox.mapboxsdk.tileprovider.constants.TileLayerConstants;
 import com.mapbox.mapboxsdk.util.GeometryMath;
 import com.mapbox.mapboxsdk.views.MapView;
 
+import java.lang.reflect.Method;
+
 public class Projection implements GeoConstants {
     private MapView mapView = null;
     private int viewWidth2;
     private int viewHeight2;
     private int worldSize2;
-    private final int offsetX;
-    private final int offsetY;
-    private final int centerX;
-    private final int centerY;
+    private int offsetX;
+    private int offsetY;
+    private int centerX;
+    private int centerY;
     private BoundingBox mBoundingBoxProjection;
-    private final float mZoomLevelProjection;
-    private final Rect mScreenRectProjection;
-    private final RectF mTransformedScreenRectProjection;
-    private final Rect mIntrinsicScreenRectProjection;
-    private final float mMapOrientation;
-    private final Matrix mRotateMatrix = new Matrix();
+    private float mZoomLevelProjection;
+    private RectF mScreenRectProjection = new RectF();
+    private RectF mTransformedScreenRectProjection = new RectF();
+    private RectF mIntrinsicScreenRectProjection = new RectF();
     protected static int mTileSize = 256;
+
+    private float mMapOrientation = 0;
+    private float mMapSkew = 0;
+    private boolean mCameraCanRestore = false;
+    private final Camera mCamera = new Camera();
+    private final float[] mRotatePoints = new float[2];
+    private static Method sMotionEventTransformMethod;
+    protected float mMultiTouchScale = 1.0f;
+    protected PointF mMultiTouchScalePoint = new PointF();
+
+    private boolean mNeedsUpdate = false;
+    private boolean mNeedsUpdateCamera = false;
 
     public Projection(final MapView mv) {
         super();
         this.mapView = mv;
+        update();
+    }
 
+    public void setNeedsUpdate() {
+        mNeedsUpdate = true;
+    }
+
+    public boolean needsUpdateCamera() {
+        return mNeedsUpdateCamera;
+    }
+
+    public void setNeedsUpdateCamera() {
+        mNeedsUpdateCamera = true;
+    }
+
+    public boolean needsUpdate() {
+        return mNeedsUpdate;
+    }
+
+
+    public void updateIfNeeded() {
+        if (mNeedsUpdate) {
+            update();
+        }
+        else if (mNeedsUpdateCamera) {
+            updateCamera();
+        }
+    }
+
+
+    public void update() {
         viewWidth2 = mapView.getMeasuredWidth() >> 1;
         viewHeight2 = mapView.getMeasuredHeight() >> 1;
+        if (viewWidth2 == 0 || viewHeight2 == 0) {
+            return;
+        }
+        mNeedsUpdate = false;
         mZoomLevelProjection = mapView.getZoomLevel(false);
         worldSize2 = mapSize(mZoomLevelProjection) >> 1;
+        mMapOrientation = mapView.getMapOrientation();
+        mMapSkew = mapView.getMapSkew();
 
         offsetX = -worldSize2;
         offsetY = -worldSize2;
 
-        centerX = mv.getScrollX();
-        centerY = mv.getScrollY();
+        centerX = mapView.getScrollX();
+        centerY = mapView.getScrollY();
 
         //TODO: optimize because right now each line re-compute the previous value
-        mIntrinsicScreenRectProjection = mapView.getIntrinsicScreenRect(null);
-        if (mapView.getMapOrientation() % 180 != 0) {
+        mapView.getIntrinsicScreenRect(mIntrinsicScreenRectProjection);
+        if (mMapOrientation % 180 != 0) {
             // Since the canvas is shifted by getWidth/2, we can just return our
             // natural scrollX/Y
             // value since that is the same as the shifted center.
             PointF scrollPoint = mapView.getScrollPoint();
-            mScreenRectProjection = GeometryMath.getBoundingBoxForRotatedRectangle(mIntrinsicScreenRectProjection,
-                    scrollPoint.x, scrollPoint.y, this.getMapOrientation(), null);
+            GeometryMath.getBoundingBoxForRotatedRectangle(mIntrinsicScreenRectProjection,
+                    scrollPoint.x, scrollPoint.y, mMapOrientation, mScreenRectProjection);
         } else {
-            mScreenRectProjection = mIntrinsicScreenRectProjection;
+            mScreenRectProjection.set(mIntrinsicScreenRectProjection);
         }
-        mTransformedScreenRectProjection = new RectF(mScreenRectProjection);
-        mapView.getInversedTransformMatrix().mapRect(mTransformedScreenRectProjection);
-        mMapOrientation = mapView.getMapOrientation();
-        mRotateMatrix.setRotate(-mMapOrientation, viewWidth2, viewHeight2);
+        updateCamera();
     }
+
+
 
     public float getZoomLevel() {
         return mZoomLevelProjection;
@@ -101,7 +153,7 @@ public class Projection implements GeoConstants {
         return mBoundingBoxProjection;
     }
 
-    public Rect getScreenRect() {
+    public RectF getScreenRect() {
         return mScreenRectProjection;
     }
 
@@ -109,12 +161,8 @@ public class Projection implements GeoConstants {
         return mTransformedScreenRectProjection;
     }
 
-    public Rect getIntrinsicScreenRect() {
+    public RectF getIntrinsicScreenRect() {
         return mIntrinsicScreenRectProjection;
-    }
-
-    public float getMapOrientation() {
-        return mMapOrientation;
     }
 
     public int getCenterX() {
@@ -131,7 +179,7 @@ public class Projection implements GeoConstants {
      * @return LatLng under x/y.
      */
     public LatLng fromPixels(final float x, final float y) {
-        final Rect screenRect = getIntrinsicScreenRect();
+        final RectF screenRect = getIntrinsicScreenRect();
         return pixelXYToLatLong(screenRect.left + (int) x + worldSize2,
                 screenRect.top + (int) y + worldSize2, mZoomLevelProjection);
     }
@@ -164,8 +212,8 @@ public class Projection implements GeoConstants {
      */
     public PointF toPixels(final ILatLng in, final PointF reuse) {
         PointF result = toMapPixels(in, reuse);
-        result.offset(-mIntrinsicScreenRectProjection.exactCenterX(),
-                -mIntrinsicScreenRectProjection.exactCenterY());
+        result.offset(-mIntrinsicScreenRectProjection.centerX(),
+                -mIntrinsicScreenRectProjection.centerX());
         if (mMapOrientation % 360 != 0) {
             GeometryMath.rotatePoint(0, 0, result, mMapOrientation, result);
         }
@@ -183,8 +231,8 @@ public class Projection implements GeoConstants {
     public PointF toPixels(final PointF mapPos, final PointF reuse) {
         final PointF out = GeometryMath.reusable(reuse);
         out.set(mapPos);
-        out.offset(viewWidth2 - mIntrinsicScreenRectProjection.exactCenterX(),
-                viewHeight2 - mIntrinsicScreenRectProjection.exactCenterY());
+        out.offset(viewWidth2 - mIntrinsicScreenRectProjection.centerX(),
+                viewHeight2 - mIntrinsicScreenRectProjection.centerY());
         return out;
     }
 
@@ -529,16 +577,133 @@ public class Projection implements GeoConstants {
         return n;
     }
 
-    public void rotatePoints(final float[] pRotatePoints) {
-        mRotateMatrix.mapPoints(pRotatePoints);
+    private final Matrix mRotationMatrix = new Matrix();
+    private final Matrix mTransformMatrix = new Matrix();
+    private final Matrix mInvScaleMatrix = new Matrix();
+    private final Matrix mRotationAndSkewMatrix = new Matrix();
+    private final Matrix mRotationAndSkewTouchMatrix = new Matrix();
+    private final Matrix mSkewMatrix = new Matrix();
+
+    private void updateCamera() {
+        mNeedsUpdateCamera = false;
+//        if (mCameraCanRestore) {
+//            mCamera.restore();
+//        }
+//        else {
+//            mCameraCanRestore = true;
+//        }
+//        mCamera.save();
+//        mRotationAndSkewMatrix.reset();
+        mInvScaleMatrix.reset();
+
+//        mCamera.rotateZ(-mMapOrientation);
+//        mCamera.rotateX(mMapSkew);
+//        mCamera.getMatrix(mRotationAndSkewMatrix);
+
+//        mRotationAndSkewMatrix.preTranslate(-getScreenRect().exactCenterX(), -getScreenRect().exactCenterY());
+//        mRotationAndSkewMatrix.postTranslate(getScreenRect().exactCenterX(), getScreenRect().exactCenterY());
+
+
+
+        mRotationAndSkewTouchMatrix.reset();
+//        mRotationAndSkewTouchMatrix.preTranslate(-viewWidth2, -viewHeight2);
+        mRotationAndSkewTouchMatrix.postRotate(-mMapOrientation, viewWidth2, viewHeight2);
+//        mRotationAndSkewTouchMatrix.invert(mRotationAndSkewTouchMatrix);
+
+
+//        mTransformMatrix.set(mRotationAndSkewMatrix);
+//        mTransformMatrix.preScale(1.0f,1 - ( mMapSkew / 60.0f));
+//        mTransformMatrix.preTranslate(-viewWidth2, -viewHeight2);
+//        mTransformMatrix.postTranslate(viewWidth2, viewHeight2);
+
+        mTransformedScreenRectProjection.set(mScreenRectProjection);
+        if (mMultiTouchScale != 1.0f) {
+            mInvScaleMatrix.preScale(1 / mMultiTouchScale,
+                    1 / mMultiTouchScale, mMultiTouchScalePoint.x,
+                    mMultiTouchScalePoint.y);
+//            mTransformMatrix.preScale(mMultiTouchScale,
+//                    mMultiTouchScale, mMultiTouchScalePoint.x,
+//                    mMultiTouchScalePoint.y);
+            mInvScaleMatrix.mapRect(mTransformedScreenRectProjection);
+        }
     }
 
-    public void rotateRect(final RectF rect) {
-        mRotateMatrix.mapRect(rect);
+    public void setMapRotation(final float mapRotation) {
+        mMapOrientation = mapRotation % 360.0f;
+        setNeedsUpdateCamera();
     }
 
-    public final Matrix getRotationMatrix() {
-        return mRotateMatrix;
+    public float getMapOrientation() {
+        return mMapOrientation;
+    }
+
+    public void setMapSkew(final float mapSkew) {
+        mMapSkew = mapSkew % 360.0f;
+        setNeedsUpdateCamera();
+    }
+
+    public float getMapSkew() {
+        return mMapSkew;
+    }
+
+    public MotionEvent rotateAndSkewTouchEvent(MotionEvent ev) {
+        if (mMapOrientation % 360 == 0) {
+            return ev;
+        }
+        MotionEvent rotatedEvent = MotionEvent.obtain(ev);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            mRotatePoints[0] = ev.getX();
+            mRotatePoints[1] = ev.getY();
+            mRotationAndSkewTouchMatrix.mapPoints(mRotatePoints);
+            rotatedEvent.setLocation(mRotatePoints[0], mRotatePoints[1]);
+        } else {
+            // This method is preferred since it will rotate historical touch events too
+            try {
+                if (sMotionEventTransformMethod == null) {
+                    sMotionEventTransformMethod = MotionEvent.class.getDeclaredMethod("transform",
+                            new Class[]{Matrix.class});
+                }
+                sMotionEventTransformMethod.invoke(rotatedEvent, mRotationAndSkewTouchMatrix);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return rotatedEvent;
+    }
+
+    public void transformCanvas(Canvas canvas) {
+//        Matrix cctm = canvas.getMatrix();
+//        Matrix ctmi = new Matrix();
+//        cctm.invert(ctmi);
+//        canvas.concat(ctmi);
+//        canvas.concat(mTransformMatrix);
+//        canvas.concat(cctm);
+
+        canvas.translate(viewWidth2, viewHeight2);
+        canvas.scale(mMultiTouchScale, mMultiTouchScale, mMultiTouchScalePoint.x,
+                mMultiTouchScalePoint.y);
+
+        // rotate Canvas
+        canvas.rotate(mMapOrientation, getScreenRect().centerX(),
+                getScreenRect().centerY());
+    }
+
+    public final void setScalePoint(final PointF point) {
+        setScalePoint(point.x, point.y);
+    }
+
+    public final void setScalePoint(final float pointx, final float pointy) {
+        mMultiTouchScalePoint.set(pointx, pointy);
+        if (mMultiTouchScale != 1.0f) {
+            setNeedsUpdateCamera();
+        }
+    }
+    public void setScale(final float scale) {
+        mMultiTouchScale = scale;
+        setNeedsUpdateCamera();
+    }
+    public final float getScale() {
+        return mMultiTouchScale;
     }
 
     private static final String TAG = "Projection";
