@@ -13,9 +13,9 @@ public class GeometryMath {
     public static final double DEG2RAD = (Math.PI / 180.0);
     public static final double RAD2DEG = (180.0 / Math.PI);
 
-    public static final Rect getBoundingBoxForRotatedRectangle(final Rect rect, final float centerX,
-            final float centerY, final float angle, final Rect reuse) {
-        final Rect out = GeometryMath.reusable(reuse);
+    public static final RectF getBoundingBoxForRotatedRectangle(final RectF rect, final float centerX,
+            final float centerY, final float angle, final RectF reuse) {
+        final RectF out = GeometryMath.reusable(reuse);
         if (angle % 360 == 0) {
             out.set(rect);
             return out;
@@ -40,8 +40,8 @@ public class GeometryMath {
         double dy4 = rect.bottom - centerY;
         double newX4 = centerX - dx4 * cosTheta + dy4 * sinTheta;
         double newY4 = centerY - dx4 * sinTheta - dy4 * cosTheta;
-        out.set((int) Min4(newX1, newX2, newX3, newX4), (int) Min4(newY1, newY2, newY3, newY4),
-                (int) Max4(newX1, newX2, newX3, newX4), (int) Max4(newY1, newY2, newY3, newY4));
+        out.set((float) Min4(newX1, newX2, newX3, newX4), (float) Min4(newY1, newY2, newY3, newY4),
+                (float) Max4(newX1, newX2, newX3, newX4), (float) Max4(newY1, newY2, newY3, newY4));
 
         return out;
     }
@@ -191,11 +191,11 @@ public class GeometryMath {
         return (float) (value / Math.pow(2, multiplier));
     }
 
-    public static Rect viewPortRect(final float zoomLevel, final Projection projection,
-            final Rect reuse) {
-        final Rect out = GeometryMath.reusable(reuse);
+    public static RectF viewPortRect(final float zoomLevel, final Projection projection,
+            final RectF reuse) {
+        final RectF out = GeometryMath.reusable(reuse);
         // Get the area we are drawing to
-        final Rect screenRect = projection.getScreenRect();
+        final RectF screenRect = projection.getScreenRect();
         final int worldSize_2 = projection.mapSize(zoomLevel) >> 1;
         out.set(screenRect);
 
@@ -208,7 +208,7 @@ public class GeometryMath {
             final Projection projection, final Rect reuse) {
         final Rect out = GeometryMath.reusable(reuse);
         // Get the area we are drawing to
-        final Rect screenRect = projection.getScreenRect();
+        final RectF screenRect = projection.getScreenRect();
         final int worldSize_2 = projection.mapSize(zoomLevel) >> 1;
 
         //when using float zoom, the view port should be the one of the floored value
@@ -223,7 +223,7 @@ public class GeometryMath {
         return out;
     }
 
-    public static Rect viewPortRect(final Projection projection, final Rect reuse) {
+    public static RectF viewPortRect(final Projection projection, final RectF reuse) {
         return viewPortRect(projection.getZoomLevel(), projection, reuse);
     }
 
