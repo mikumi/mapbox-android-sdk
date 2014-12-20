@@ -23,7 +23,7 @@ public class MapTile {
     private final String path;
     private final String cacheKey;
     private final int code;
-    private Rect mTileRect;
+    private Rect mTileRect = new Rect();
 
     public MapTile(final int az, final int ax, final int ay) {
         this("", az, ax, ay);
@@ -82,7 +82,7 @@ public class MapTile {
     }
 
     public void setTileRect(final Rect rect) {
-        mTileRect = rect;
+        mTileRect.set(rect);
     }
 
     public final Rect getTileRect() {

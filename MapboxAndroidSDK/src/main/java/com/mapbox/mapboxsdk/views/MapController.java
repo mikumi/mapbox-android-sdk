@@ -62,9 +62,10 @@ public class MapController implements MapViewConstants {
 
 
     protected void aboutToStartAnimation(final ILatLng latlong, final PointF mapCoords) {
+        mMapView.hasStartedAnimating();
         zoomOnLatLong = latlong;
         final Projection projection = mMapView.getProjection();
-        mMapView.mMultiTouchScalePoint.set(mapCoords.x, mapCoords.y);
+        mMapView.getProjection().setScalePoint(mapCoords);
         projection.toPixels(mapCoords, mapCoords);
         zoomDeltaScroll.set((float) (mMapView.getMeasuredWidth() / 2.0 - mapCoords.x), (float) (mMapView.getMeasuredHeight() / 2.0 - mapCoords.y));
     }
@@ -83,7 +84,8 @@ public class MapController implements MapViewConstants {
         aboutToStartAnimation(latlong, mapCoords);
     }
 
-    protected void aboutToStartAnimation(final float screenX, final float screenY) {
+    public void aboutToStartAnimation(final float screenX, final float screenY) {
+        mMapView.hasStartedAnimating();
         final float width_2 = mMapView.getMeasuredWidth() / 2.0f;
         final float height_2 = mMapView.getMeasuredHeight() / 2.0f;
         final PointF scrollPoint = mMapView.getScrollPoint();
@@ -93,7 +95,7 @@ public class MapController implements MapViewConstants {
         final double worldSize_2 = mMapView.getProjection().mapSize(zoom) >> 1;
         zoomOnLatLong = mMapView.getProjection().pixelXYToLatLong(mapX + worldSize_2,
                         mapY + worldSize_2, zoom);
-        mMapView.mMultiTouchScalePoint.set((float) mapX, (float) mapY);
+        mMapView.getProjection().setScalePoint((float) mapX, (float) mapY);
         zoomDeltaScroll.set(width_2 - screenX, height_2 - screenY);
     }
 
@@ -162,7 +164,7 @@ public class MapController implements MapViewConstants {
     }
 
     public void stopPanning() {
-        mMapView.mIsFlinging = false;
+        mMapView.flingeHasStopped();
         mMapView.getScroller().forceFinished(true);
     }
 
@@ -173,7 +175,7 @@ public class MapController implements MapViewConstants {
 
         if (!mMapView.getScroller().isFinished()) {
             if (jumpToTarget) {
-                mMapView.mIsFlinging = false;
+                mMapView.flingeHasStopped();
                 mMapView.getScroller().abortAnimation();
                 setCenter(animateToTargetPoint);
             } else {
@@ -192,7 +194,7 @@ public class MapController implements MapViewConstants {
             if (jumpToTarget && zoomOnLatLong != null) {
                 goTo(zoomOnLatLong, zoomDeltaScroll);
             }
-            mMapView.setIsAnimating(false);
+            mMapView.hasStoppedAnimating();
         }
     }
 
@@ -212,7 +214,6 @@ public class MapController implements MapViewConstants {
 
         stopAnimation(true);
         mCurrentlyUserAction = userAction;
-        mMapView.mIsFlinging = false;
 
         float currentZoom = mMapView.getZoomLevel(false);
 
@@ -228,7 +229,7 @@ public class MapController implements MapViewConstants {
             return false;
         }
 
-        mMapView.mMultiTouchScalePoint.set(p.x, p.y);
+        mMapView.getProjection().setScalePoint(p);
         List<PropertyValuesHolder> propertiesList = new ArrayList<PropertyValuesHolder>();
         zoomDeltaScroll.set(0, 0);
         if (zoomAnimating) {
@@ -370,17 +371,21 @@ public class MapController implements MapViewConstants {
     }
 
     protected void onAnimationStart() {
-        mMapView.setIsAnimating(true);
+        mMapView.hasStartedAnimating();
     }
 
     public void onAnimationEnd() {
+        onAnimationEnd(mMapView.getAnimatedZoom());
+
+    }
+    public void onAnimationEnd(final float endZoom) {
         stopPanning();
-        mMapView.setIsAnimating(false);
-        mMapView.setZoomInternal(mMapView.getAnimatedZoom(), zoomOnLatLong, zoomDeltaScroll);
+        mMapView.hasStoppedAnimating();
+        mMapView.setZoomInternal(endZoom, zoomOnLatLong, zoomDeltaScroll);
         zoomOnLatLong = null;
         mCurrentlyUserAction = false;
-    }
 
+    }
     /**
      * Called when the mapView is layed out for the first time
      * if action were triggered before we had to wait because

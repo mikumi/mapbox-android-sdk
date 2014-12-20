@@ -9,7 +9,6 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.location.Location;
-import android.util.Log;
 import android.view.MotionEvent;
 import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.events.MapListener;
@@ -155,15 +154,13 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
 
     protected void drawMyLocation(final ISafeCanvas canvas, final MapView mapView, final Location lastFix) {
 
-        final Rect mapBounds = new Rect(0, 0, mapView.getMeasuredWidth(), mapView.getMeasuredHeight());
         final Projection projection = mapView.getProjection();
-        Rect rect = new Rect();
-        getDrawingBounds(projection, lastFix, null).round(rect);
-        if (!Rect.intersects(mapBounds, rect)) {
+        final RectF mapBounds = projection.getTransformScreenRect();
+        updateDrawingPositionRect();
+        if (!RectF.intersects(mapBounds, mMyLocationRect)) {
             //dont draw item if offscreen
             return;
         }
-        projection.toMapPixels(mLatLng, mMapCoords);
         final float mapScale = 1 / mapView.getScale();
 
         canvas.save();
@@ -259,6 +256,46 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
         final float y = positionOnScreen.y - scale.y * w;
         reuse.set(x, y, x + w, y + w);
 
+        return reuse;
+    }
+
+    protected RectF getMapDrawingBounds(PointF positionOnScreen, Location lastFix, RectF reuse) {
+        if (reuse == null) {
+            reuse = new RectF();
+        }
+        final Bitmap bitmap = lastFix.hasBearing() ? mDirectionArrowBitmap : mPersonBitmap;
+        final PointF scale = lastFix.hasBearing() ? mDirectionHotspot : mPersonHotspot;
+        //because of bearing and rotation
+        final int w = (int) (Math.sqrt(2) * Math.max(bitmap.getWidth(), bitmap.getHeight()));
+        final float x = positionOnScreen.x - scale.x * w;
+        final float y = positionOnScreen.y - scale.y * w;
+        reuse.set(x, y, x + w, y + w);
+
+        return reuse;
+    }
+
+    protected RectF internalGetMapDrawingBounds(final Projection projection, Location lastFix, RectF reuse) {
+        if (reuse == null) {
+            reuse = new RectF();
+        }
+        projection.toMapPixels(mLatLng, mMapCoords);
+        final Bitmap bitmap = lastFix.hasBearing() ? mDirectionArrowBitmap : mPersonBitmap;
+        final PointF scale = lastFix.hasBearing() ? mDirectionHotspot : mPersonHotspot;
+        //because of bearing and rotation
+        int w = (int) (Math.sqrt(2) * Math.max(bitmap.getWidth(), bitmap.getHeight()));
+        if (mDrawAccuracyEnabled) {
+            int radius = (int) Math.ceil(
+                    lastFix.getAccuracy() / (float) Projection.groundResolution(
+                            lastFix.getLatitude(), projection.getZoomLevel())
+            );
+
+            radius += (int) Math.ceil(
+                    mCirclePaint.getStrokeWidth() == 0 ? 1 : mCirclePaint.getStrokeWidth());
+            w = (int)Math.max(w, radius);
+        }
+        final float x = mMapCoords.x - scale.x * w;
+        final float y = mMapCoords.y - scale.y * w;
+        reuse.set(x, y, x + w, y + w);
         return reuse;
     }
 
@@ -380,7 +417,7 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
     }
 
     private void updateDrawingPositionRect() {
-        getMyLocationMapDrawingBounds(mMapView, mLocation, mMyLocationRect);
+        internalGetMapDrawingBounds(mMapView.getProjection(), mLocation, mMyLocationRect);
     }
 
     private void invalidate() {
@@ -394,12 +431,7 @@ public class UserLocationOverlay extends SafeDrawOverlay implements Snappable, M
         // If we had a previous location, merge in those bounds too
         newRect.union(mMyLocationPreviousRect);
         // Invalidate the bounds
-        mMapView.post(new Runnable() {
-            @Override
-            public void run() {
-                mMapView.invalidateMapCoordinates(newRect);
-            }
-        });
+        mMapView.postInvalidateMapCoordinates(newRect);
     }
     
     private boolean areLocationsEqual(final Location loc1, final Location loc2) {
